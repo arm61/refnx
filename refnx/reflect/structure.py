@@ -413,6 +413,31 @@ class Component(object):
     def lnprob(self):
         return 0
 
+class LipidMono(Component):
+    """
+    A lipid monolayer component, consisting of a series of contrasts where the lipid structure is fixed
+    across the different contrasts
+    """
+
+    def __init__(self, headScatLen, tailScatLen, name=''):
+        """
+        Parameters
+        ----------
+        hScatLen: array-like
+            the scattering lengths of the head groups of the different species contrasts
+        tScatLen: array-like
+            the scattering lengths of the tail groups of the different species contrasts
+        """
+        super(LipidMono, self).__init__()
+        if (len(headScatLen) != len(tailScatLen)):
+            raise ValueError("Your number of head scattering lengths is not equal to the number of tail scattering lengths")
+
+        self.headScatLen = np.zeros(len(headScatLen))
+        self.tailScatLen = np.zeros(len(headScatLen))
+        for i in range(0, len(headScatLen)):
+            self.headScatLen[i] = possibly_create_parameter(headScatLen[i], name='%s - head scattering length %i' % (name, i))
+            self.tailScatLen[i] = possibly_create_parameter(tailScatLen[i], name='%s - tail scattering length %i' % (name, i))
+
 
 class Slab(Component):
     """
