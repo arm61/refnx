@@ -419,7 +419,7 @@ class LipidMono(Component):
     across the different contrasts
     """
 
-    def __init__(self, headScatLen, tailScatLen, name=''):
+    def __init__(self, headScatLen, tailScatLen, subPhaseSLD, superPhaseSLD, thick, apm, name=''):
         """
         Parameters
         ----------
@@ -427,16 +427,34 @@ class LipidMono(Component):
             the scattering lengths of the head groups of the different species contrasts
         tScatLen: array-like
             the scattering lengths of the tail groups of the different species contrasts
+        subPhaseSLD: array-like
+            the SLD of the subphase for each of the contrasts
+        superPhaseSLD: array-like
+            the SLD of the superphase for each of the contrasts
+        thick: float[2]
+            the head[0] and the tail[1] estimated thicknesses
+        apm: float
+            an estimate of the system area per molecule
         """
         super(LipidMono, self).__init__()
-        if (len(headScatLen) != len(tailScatLen)):
-            raise ValueError("Your number of head scattering lengths is not equal to the number of tail scattering lengths")
+        n = len(headScatLen)
+        if any(len(x) != n for x in [headScatLen, tailScatLen, subPhaseSLD, superPhaseSLD]):
+            raise ValueError("The number of different contrasts is inconsistant!")
+        if len(thick) != 2:
+            raise ValueError("Both the head and tail layer thicknesses should be estimated")
 
         self.headScatLen = np.zeros(len(headScatLen))
         self.tailScatLen = np.zeros(len(headScatLen))
+        self.subPhaseSLD = np.zeros(len(headScatLen))
+        self.superPhaseSLD = np.zeros(len(headScatLen))
         for i in range(0, len(headScatLen)):
             self.headScatLen[i] = possibly_create_parameter(headScatLen[i], name='%s - head scattering length %i' % (name, i))
             self.tailScatLen[i] = possibly_create_parameter(tailScatLen[i], name='%s - tail scattering length %i' % (name, i))
+            self.subPhaseSLD[i] = possibly_create_parameter(subPhaseSLD[i], name='%s - subphase %i' % (name, i))
+            self.superPhaseSLD[i] = possibly_create_parameter(superPhaseSLD[i], name='%s - superphase %i' % (name, i))
+        self.head_thick = possibly_create_parameter(thick[0], name='%s - head layer thickness' % name)
+        self.tail_thick = possibly_create_parameter(thick[1], name='%s - tail layer thickness' % name)
+        self.apm = possibly_create_parameter(apm, name='%s - area per molecule' % name)
 
 
 class Slab(Component):
