@@ -413,9 +413,9 @@ class Component(object):
     def lnprob(self):
         return 0
 
-class LipidMono(Component):
+class SurfMono(Component):
     """
-    A lipid monolayer component, consisting of a series of contrasts where the lipid structure is fixed
+    A surfactant monolayer component, consisting of a series of contrasts where the lipid structure is fixed
     across the different contrasts
     """
 
@@ -435,19 +435,21 @@ class LipidMono(Component):
             the head[0] and the tail[1] estimated thicknesses
         apm: float
             an estimate of the system area per molecule
+        name : str
+            Name of this lipid component
         """
-        super(LipidMono, self).__init__()
+        super(SurfMono, self).__init__()
         n = len(headScatLen)
         if any(len(x) != n for x in [headScatLen, tailScatLen, subPhaseSLD, superPhaseSLD]):
             raise ValueError("The number of different contrasts is inconsistant!")
         if len(thick) != 2:
             raise ValueError("Both the head and tail layer thicknesses should be estimated")
-
-        self.headScatLen = np.zeros(len(headScatLen))
-        self.tailScatLen = np.zeros(len(headScatLen))
-        self.subPhaseSLD = np.zeros(len(headScatLen))
-        self.superPhaseSLD = np.zeros(len(headScatLen))
-        for i in range(0, len(headScatLen)):
+        self.numberofcontrasts = len(headScatLen)
+        self.headScatLen = np.zeros(self.numberofcontrasts)
+        self.tailScatLen = np.zeros(self.numberofcontrasts)
+        self.subPhaseSLD = np.zeros(self.numberofcontrasts)
+        self.superPhaseSLD = np.zeros(self.numberofcontrasts)
+        for i in range(0, self.numberofcontrasts):
             self.headScatLen[i] = possibly_create_parameter(headScatLen[i], name='%s - head scattering length %i' % (name, i))
             self.tailScatLen[i] = possibly_create_parameter(tailScatLen[i], name='%s - tail scattering length %i' % (name, i))
             self.subPhaseSLD[i] = possibly_create_parameter(subPhaseSLD[i], name='%s - subphase %i' % (name, i))
@@ -456,6 +458,72 @@ class LipidMono(Component):
         self.tail_thick = possibly_create_parameter(thick[1], name='%s - tail layer thickness' % name)
         self.apm = possibly_create_parameter(apm, name='%s - area per molecule' % name)
 
+        guessSLD = self.tailScatLen[0] / (self.tail_thick.value * apm) * 1E6
+        tailSLDs = []
+        headSLDs = []
+        subSLDs = []
+        superSLDs = []
+        tailSLDs.append(Parameter(guessSLD, 'tail_layer_contrast0', bounds=(guessSLD - (0.5 * guessSLD), guessSLD + (0.5 * guessSLD)), vary=True))
+        headSLDs.append(Parameter(1, 'head_layer_contrast0'))
+        subSLDs.append(SLD(self.subPhaseSLD[0], name = 'sub0'))
+        superSLDs.append(SLD(self.superPhaseSLD[0], name = 'super0'))
+        for i in range(1, self.numberofcontrasts):
+            tailSLDs.append(Parameter(1, 'tail_layer_contrast%s' % i))
+            headSLDs.append(Parameter(1, 'head_layer_contrast%s' % i))
+            subSLDs.append(SLD(self.subPhaseSLD[i], name='sub%s' % i))
+            superSLDs.append(SLD(self.superPhaseSLD[i], name='super%s' % i))
+        thickness = []
+        thickness.append(Parameter(self.head_thick.value, 'head_layer_thick', bounds = (self.head_thick.value - (0.5 * self.head_thick.value), self.head_thick.value + (0.5 * self.head_thick.value)), vary=True))
+        thickness.append(Parameter(self.tail_thick.value, 'tail_layer_thick', bounds = (self.tail_thick.value - (0.5 * self.tail_thick.value), self.tail_thick.value + (0.5 * self.tail_thick.value)), vary=True))
+        roughness = []
+        roughness.append(Parameter(0.2 * self.head_thick.value, 'head_layer_rough', bounds = (0, 0.5 * self.head_thick.value), vary=True))
+        roughness.append(Parameter(0.2 * self.tail_thick.value, 'tail_layer_rough', bounds = (0, 0.5 * self.tail_thick.value), vary=True))
+        roughness.append(Parameter(3., 'water_layer_rough', bounds = (0, 10), vary=True))
+        heads = []
+        tails = []
+        subs = []
+        supers = []
+        for i in range(0, self.numberofcontrasts):
+            heads.append(SLD(headSLDs[i], name = 'head_contrast%s' % i))
+            tails.append(SLD(tailSLDs[i], name = 'tail_contrast%s' % i))
+            subs.append(SLD(subSLDs[i], name = 'subphase_contrast%s' % i))
+            supers.append(SLD(superSLDs[i], name = 'superphase_contrast%s' % i))
+        head_layers = []
+        tail_layers = []
+        sub_layers = []
+        for i in range(0, self.numberofcontrasts):
+            head_layers.append(heads[i](thickness[0], roughness[0]))
+            tail_layers.append(tails[i](thickness[1], roughness[1]))
+            sub_layers.append(subs[i](0., roughness[2]))
+        head_layers[0].vfsolv.setp(0, bounds = (0, 1), vary=True)
+        for i in range(1, self.numberofcontrasts):
+            head_layers[i].vfsolv.constraint = head_layers[0].vfsolv
+        if self.numberofcontrasts < 3:
+            head_layers[0].sld.real.constraint = (tail_layers[0].sld.real * thickness[1] * self.headScatLen[0]) / (
+                thickness[0] * self.tailScatLen[0]) * (1 - head_layers[0].vfsolv)
+            head_layers[1].sld.real.constraint = (head_layers[0].sld.real * self.tailScatLen[1]) / headScatLen[0]
+            tail_layers[1].sld.real.constraint = (head_layers[1].sld.real * thickness[0] * self.tailScatLen[1]) / (
+                thickness[1] * self.headScatLen[1] * (1 - head_layers[1].vfsolv))
+        else:
+            if (self.numberofcontrasts % 2 != 0):
+                for i in range(0, self.numberofcontrasts - 2, 2):
+                    head_layers[i].sld.real.constraint = (tail_layers[i].sld.real * thickness[1] * self.headScatLen[i]) / (thickness[0] * self.tailScatLen[i] * head_layers[i].vfsolv)
+                    head_layers[i+1].sld.real.constraint = (head_layers[i].sld.real * self.headScatLen[i+1]) / headScatLen[i]
+                    tail_layers[i+1].sld.real.constraint = (head_layers[i+1].sld.real * thickness[0] * self.tailScatLen[i+1] * head_layers[i+1].vfsolv) / (thickness[1] * self.headScatLen[i+1])
+                    tail_layers[i+2].sld.real.constraint = (tail_layers[i+1].sld.real * self.tailScatLen[i+2]) / self.tailScatLen[i+1]
+                head_layers[self.numberofcontrasts-1].sld.real.constraint = (tail_layers[self.numberofcontrasts-1].sld.real * thickness[1] * self.headScatLen[self.numberofcontrasts-1]) / (thickness[0] * self.tailScatLen[self.numberofcontrasts-1] * head_layers[self.numberofcontrasts - 1].vfsolv)
+            else:
+                for i in range(0, self.numberofcontrasts - 2, 2):
+                    head_layers[i].sld.real.constraint = (tail_layers[i].sld.real * thickness[1] * self.headScatLen[i]) / (thickness[0] * self.tailScatLen[i] * head_layers[i].vfsolv)
+                    head_layers[i + 1].sld.real.constraint = (head_layers[i].sld.real * self.headScatLen[i + 1]) / headScatLen[i]
+                    tail_layers[i + 1].sld.real.constraint = (head_layers[i + 1].sld.real * thickness[0] * self.tailScatLen[i + 1] * head_layers[i + 1].vfsolv) / (thickness[1] * self.headScatLen[i + 1])
+                    tail_layers[i + 2].sld.real.constraint = (tail_layers[i + 1].sld.real * self.tailScatLen[i + 2]) / self.tailScatLen[i + 1]
+                head_layers[self.numberofcontrasts-2].sld.real.constraint = (tail_layers[self.numberofcontrasts-2].sld.real * thickness[1] * self.headScatLen[self.numberofcontrasts - 2]) / (thickness[0] * self.tailScatLen[self.numberofcontrasts - 2] * head_layers[self.numberofcontrasts - 2].vfsolv)
+                head_layers[self.numberofcontrasts - 1].sld.real.constraint = (head_layers[self.numberofcontrasts - 2].sld.real * self.headScatLen[self.numberofcontrasts - 1]) / self.headScatLen[self.numberofcontrasts - 2]
+                tail_layers[self.numberofcontrasts-1].sld.real.constraint = (head_layers[self.numberofcontrasts - 1] * thickness[0] * self.tailScatLen[self.numberofcontrasts-1] * head_layers[self.numberofcontrasts-1].vfsolv) / (thickness[1] * self.headScatLen[self.numberofcontrasts-1])
+        self.structures = []
+        for i in range(0, self.numberofcontrasts):
+            self.structures.append(supers[i] | tail_layers[i] | head_layers[i] | sub_layers[i])
 
 class Slab(Component):
     """
