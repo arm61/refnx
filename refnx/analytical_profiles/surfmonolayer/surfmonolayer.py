@@ -85,8 +85,10 @@ class SurfMono(Component):
                                        self.head_thick.value + (0.5 * self.head_thick.value)), vary=True)
         self.tail_thick.setp(bounds = (self.tail_thick.value - (0.5 * self.tail_thick.value),
                                        self.tail_thick.value + (0.5 * self.tail_thick.value)), vary=True)
-        self.head_rough = Parameter(0.2 * self.head_thick.value, 'head_layer_rough', bounds = (0, 0.5 * self.head_thick.value), vary=True)
-        self.tail_rough = Parameter(0.2 * self.tail_thick.value, 'tail_layer_rough', bounds = (0, 0.5 * self.tail_thick.value), vary=True)
+        self.head_rough = Parameter(0.2 * self.head_thick.value, 'head_layer_rough',
+                                    bounds = (0, 0.5 * self.head_thick.value), vary=True)
+        self.tail_rough = Parameter(0.2 * self.tail_thick.value, 'tail_layer_rough',
+                                    bounds = (0, 0.5 * self.tail_thick.value), vary=True)
         self.water_rough = Parameter(3., 'water_layer_rough', bounds = (0, 10), vary=True)
 
     def setLayers(self):
@@ -102,8 +104,9 @@ class SurfMono(Component):
 
     def setConstraints(self):
         self.setLayers()
-        vguess = 1 - ((self.head_layers['contrast0'].sld.real.value * self.head_thick.value) / self.headScatLen['contrast0'] * self.apm)
-        self.head_layers['contrast0'].vfsolv.setp(vguess, bounds = (0., 1.), vary=True)
+        vguess = 1 - (self.head_layers['contrast0'].sld.real.value * self.head_thick.value) / \
+                     (self.headScatLen['contrast0'] * self.apm)
+        self.head_layers['contrast0'].vfsolv.setp(vguess, bounds = (0., 0.999999), vary=True)
         for i in range(1, self.numberofcontrasts):
             self.head_layers['contrast%s' % i].vfsolv.constraint = self.head_layers['contrast0'].vfsolv
         if self.numberofcontrasts == 1:
