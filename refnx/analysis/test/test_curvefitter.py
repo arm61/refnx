@@ -4,11 +4,13 @@ import os.path
 
 import numpy as np
 import emcee
+import pytest
 from numpy.testing import (assert_, assert_almost_equal, assert_equal,
                            assert_allclose)
 
 from refnx.analysis import (CurveFitter, Parameter, Parameters, Model,
-                            Objective)
+                            Objective, process_chain, load_chain)
+from refnx.analysis.curvefitter import _HAVE_PTSAMPLER
 from refnx.dataset import Data1D
 from NISTModels import NIST_runner, NIST_Models
 
@@ -102,9 +104,11 @@ class TestCurveFitter(object):
         assert_equal(res[0].chain.shape, (50, 33))
 
     def test_mcmc_pt(self):
+        if not _HAVE_PTSAMPLER:
+            return
+
         # smoke test for parallel tempering
         mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
-        assert_(isinstance(mcfitter.sampler, emcee.PTSampler))
         assert_equal(mcfitter.sampler.ntemps, 10)
 
         res = mcfitter.sample(steps=60, nthin=2, verbose=False, pool=0)
@@ -123,7 +127,19 @@ class TestCurveFitter(object):
         assert_equal(mcfitter._lastpos.shape, (100, 2))
         mcfitter.initialise('jitter')
         assert_equal(mcfitter._lastpos.shape, (100, 2))
+        # initialise with last position
+        mcfitter.sample(steps=1)
+        chain = mcfitter.sampler.chain
+        mcfitter.initialise(pos=chain[..., -1, :])
+        assert_equal(mcfitter._lastpos.shape, (100, 2))
+        # initialise with chain
+        mcfitter.sample(steps=2)
+        chain = mcfitter.sampler.chain
+        mcfitter.initialise(pos=chain)
+        assert_equal(mcfitter._lastpos, chain[:, -1, :])
 
+        if not _HAVE_PTSAMPLER:
+            return
         # initialise for Parallel tempering
         mcfitter = CurveFitter(self.objective, ntemps=20, nwalkers=100)
         mcfitter.initialise('covar')
@@ -132,6 +148,16 @@ class TestCurveFitter(object):
         assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
         mcfitter.initialise('jitter')
         assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
+        # initialise with last position
+        mcfitter.sample(steps=1)
+        chain = mcfitter.sampler.chain
+        mcfitter.initialise(pos=chain[..., -1, :])
+        assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
+        # initialise with chain
+        mcfitter.sample(steps=2)
+        chain = mcfitter.sampler.chain
+        mcfitter.initialise(pos=np.copy(chain))
+        assert_equal(mcfitter._lastpos, chain[:, :, -1, :])
 
     def test_fit_smoke(self):
         # smoke tests to check that fit runs
@@ -172,8 +198,10 @@ class TestFitterGauss(object):
     # Test CurveFitter with a noisy gaussian, weighted and unweighted, to see
     # if the parameters and uncertainties come out correct
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir):
         self.path = os.path.dirname(os.path.abspath(__file__))
+        self.tmpdir = tmpdir.strpath
 
         theoretical = np.loadtxt(os.path.join(self.path, 'gauss_data.txt'))
         xvals, yvals, evals = np.hsplit(theoretical, 3)
@@ -211,6 +239,7 @@ class TestFitterGauss(object):
         self.model = Model(self.params, fitfunc=gauss)
         self.data = Data1D((xvals, yvals, evals))
         self.objective = Objective(self.model, self.data)
+        return 0
 
     def test_best_weighted(self):
         assert_equal(len(self.objective.varying_parameters()), 4)
@@ -228,13 +257,26 @@ class TestFitterGauss(object):
         uncertainties = [param.stderr for param in self.params]
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.01)
 
+        # we're also going to try the checkpointing here.
+        checkpoint = os.path.join(self.tmpdir, 'checkpoint.txt')
+
         # compare samples to best_weighted_errors
         np.random.seed(1)
         f.initialise('jitter')
-        f.sample(steps=200, random_state=1, verbose=False)
-        f.process_chain(nburn=100, nthin=20)
+        f.sample(steps=201, random_state=1, verbose=False, f=checkpoint)
+        process_chain(self.objective, f.chain, nburn=100, nthin=20)
         uncertainties = [param.stderr for param in self.params]
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.15)
+
+        # test that the checkpoint worked
+        check_array = np.loadtxt(checkpoint)
+        check_array = check_array.reshape(201, f._nwalkers, f.nvary)
+        assert_allclose(np.swapaxes(check_array, 0, 1),
+                        f.sampler.chain)
+
+        # test loading the checkpoint
+        chain = load_chain(checkpoint)
+        assert_equal(chain.shape, (f._nwalkers, 201, f.nvary))
 
     def test_best_unweighted(self):
         self.objective.use_weights = False
