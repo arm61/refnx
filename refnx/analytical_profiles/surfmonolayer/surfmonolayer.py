@@ -89,7 +89,7 @@ class SurfMono(Component):
                                     bounds = (0, 0.5 * self.head_thick.value), vary=True)
         self.tail_rough = Parameter(0.2 * self.tail_thick.value, 'tail_layer_rough',
                                     bounds = (0, 0.5 * self.tail_thick.value), vary=True)
-        self.water_rough = Parameter(3.1, 'water_layer_rough', vary=True, bounds = (1, 10))
+        self.water_rough = Parameter(3.1, 'subphase_layer_rough', vary=True, bounds = (1, 10))
 
     def setLayers(self):
         self.setSLD()
