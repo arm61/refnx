@@ -51,56 +51,65 @@ class SurfMono(Component):
         self.head_thick = possibly_create_parameter(thick[0], name='%s - head layer thickness' % name)
         self.tail_thick = possibly_create_parameter(thick[1], name='%s - tail layer thickness' % name)
         self.apm = apm
+        self.tailSLDs = {}
+        self.headSLDs = {}
+        self.subSLDs = {}
+        self.superSLDs = {}
+        self.structures = {}
+        self.tails = {}
+        self.heads = {}
+        self.subs = {}
+        self.supers = {}
+        self.head_rough = 0
+        self.tail_rough = 0
+        self.water_rough = 0
+        self.head_layers = {}
+        self.tail_layers = {}
+        self.sub_layers = {}
+
 
     def guessSLD(self):
         a = self.tailScatLen['contrast0'] / (self.tail_thick.value * self.apm) * 1E6
         return a
 
+
     def setSLD(self):
-        self.tailSLDs = {}
-        self.headSLDs = {}
-        self.subSLDs = {}
-        self.superSLDs = {}
         self.tailSLDs['contrast0'] = Parameter(self.guessSLD(), 'tail_layer_contrast0',
-                                               bounds = (self.guessSLD() - (0.5 * self.guessSLD()), self.guessSLD() +
-                                                         (0.5 * self.guessSLD())), vary=True)
+                                               bounds=(self.guessSLD() - (0.5 * self.guessSLD()), self.guessSLD() +
+                                                       (0.5 * self.guessSLD())), vary=True)
         self.headSLDs['contrast0'] = Parameter(1., 'head_layer_contrast0')
         for i in range(1, self.numberofcontrasts):
             self.tailSLDs['contrast%s' % i] = Parameter(1, 'tail_layer_contrast%s' % i)
             self.headSLDs['contrast%s' % i] = Parameter(1, 'head_layer_contrast%s' % i)
             self.subSLDs['contrast%s' % i] = Parameter(self.subPhaseSLD['contrast%s' % i], 'sub%s' % i)
             self.superSLDs['contrast%s' % i] = Parameter(self.superPhaseSLD['contrast%s' % i], 'super%s' % i)
-        self.tails = {}
-        self.heads = {}
-        self.subs = {}
-        self.supers = {}
         for i in range(0, self.numberofcontrasts):
-            self.tails['contrast%s' % i] = SLD(self.tailSLDs['contrast%s' % i], name = 'tail_contrast%s' % i)
-            self.heads['contrast%s' % i] = SLD(self.headSLDs['contrast%s' % i], name = 'head_contrast%s' % i)
-            self.subs['contrast%s' % i] = SLD(self.subPhaseSLD['contrast%s' % i], name = 'sub_contrast%s' % i)
-            self.supers['contrast%s' % i] = SLD(self.superPhaseSLD['contrast%s' % i], name = 'super_contrast%s' % i)
+            self.tails['contrast%s' % i] = SLD(self.tailSLDs['contrast%s' % i], name='tail_contrast%s' % i)
+            self.heads['contrast%s' % i] = SLD(self.headSLDs['contrast%s' % i], name='head_contrast%s' % i)
+            self.subs['contrast%s' % i] = SLD(self.subPhaseSLD['contrast%s' % i], name='sub_contrast%s' % i)
+            self.supers['contrast%s' % i] = SLD(self.superPhaseSLD['contrast%s' % i], name='super_contrast%s' % i)
+
 
     def setThickRough(self):
-        self.head_thick.setp(bounds = (self.head_thick.value - (0.5 * self.head_thick.value),
-                                       self.head_thick.value + (0.5 * self.head_thick.value)), vary=True)
-        self.tail_thick.setp(bounds = (self.tail_thick.value - (0.5 * self.tail_thick.value),
-                                       self.tail_thick.value + (0.5 * self.tail_thick.value)), vary=True)
+        self.head_thick.setp(bounds=(self.head_thick.value - (0.25 * self.head_thick.value),
+                                     self.head_thick.value + (0.25 * self.head_thick.value)), vary=True)
+        self.tail_thick.setp(bounds=(self.tail_thick.value - (0.25 * self.tail_thick.value),
+                                     self.tail_thick.value + (0.25 * self.tail_thick.value)), vary=True)
         self.head_rough = Parameter(0.2 * self.head_thick.value, 'head_layer_rough',
-                                    bounds = (0, 0.5 * self.head_thick.value), vary=True)
+                                    bounds=(0, 0.5 * self.head_thick.value), vary=True)
         self.tail_rough = Parameter(0.2 * self.tail_thick.value, 'tail_layer_rough',
-                                    bounds = (0, 0.5 * self.tail_thick.value), vary=True)
-        self.water_rough = Parameter(3.1, 'subphase_layer_rough', vary=True, bounds = (1, 10))
+                                    bounds=(0, 0.5 * self.tail_thick.value), vary=True)
+        self.water_rough = Parameter(3.1, 'subphase_layer_rough')
+
 
     def setLayers(self):
         self.setSLD()
         self.setThickRough()
-        self.head_layers = {}
-        self.tail_layers = {}
-        self.sub_layers = {}
         for i in range(0, self.numberofcontrasts):
             self.head_layers['contrast%s' % i] = self.heads['contrast%s' % i](self.head_thick, self.head_rough)
             self.tail_layers['contrast%s' % i] = self.tails['contrast%s' % i](self.tail_thick, self.tail_rough)
             self.sub_layers['contrast%s' % i] = self.subs['contrast%s' % i](0., self.water_rough)
+
 
     def setConstraints(self):
         self.setLayers()
@@ -110,39 +119,107 @@ class SurfMono(Component):
         for i in range(1, self.numberofcontrasts):
             self.head_layers['contrast%s' % i].vfsolv.constraint = self.head_layers['contrast0'].vfsolv
         if self.numberofcontrasts == 1:
-            self.head_layers['contrast0'].sld.real.constraint = (self.tail_layers['contrast0'].sld.real * self.tail_thick * self.headScatLen['contrast0']) / (self.head_thick * self.tailScatLen['contrast0'] * (Parameter(1, '1') - self.head_layers['contrast0'].vfsolv))
+            self.head_layers['contrast0'].sld.real.constraint = \
+                (self.tail_layers['contrast0'].sld.real * self.tail_thick * self.headScatLen['contrast0']) / \
+                (self.head_thick * self.tailScatLen['contrast0'] * (Parameter(1, '1') -
+                                                                    self.head_layers['contrast0'].vfsolv))
         if self.numberofcontrasts == 2:
-            self.head_layers['contrast0'].sld.real.constraint = (self.tail_layers['contrast0'].sld.real * self.tail_thick * self.headScatLen['contrast0']) / (self.head_thick * self.tailScatLen['contrast0'] * (Parameter(1, '1') - self.head_layers['contrast0'].vfsolv))
-            self.head_layers['contrast1'].sld.real.constraint = (self.head_layers['contrast0'].sld.real * self.headScatLen['contrast1']) / (self.headScatLen['contrast0'])
-            self.tail_layers['contrast1'].sld.real.constraint = (self.head_layers['contrast1'].sld.real * self.head_thick * self.tailScatLen['contrast1'] * (Parameter(1, '1') - self.head_layers['contrast1'].vfsolv)) / (self.tail_thick * self.headScatLen['contrast1'])
+            self.head_layers['contrast0'].sld.real.constraint = \
+                (self.tail_layers['contrast0'].sld.real * self.tail_thick * self.headScatLen['contrast0']) / \
+                (self.head_thick * self.tailScatLen['contrast0'] * (Parameter(1, '1') -
+                                                                    self.head_layers['contrast0'].vfsolv))
+            self.head_layers['contrast1'].sld.real.constraint = \
+                (self.head_layers['contrast0'].sld.real * self.headScatLen['contrast1']) / \
+                (self.headScatLen['contrast0'])
+            self.tail_layers['contrast1'].sld.real.constraint = \
+                (self.head_layers['contrast1'].sld.real * self.head_thick * self.tailScatLen['contrast1'] *
+                 (Parameter(1, '1') - self.head_layers['contrast1'].vfsolv)) / (self.tail_thick *
+                                                                                self.headScatLen['contrast1'])
         if self.numberofcontrasts > 2:
-            if (self.numberofcontrasts % 2 != 0):
+            if self.numberofcontrasts % 2 != 0:
                 for i in range(0, self.numberofcontrasts - 2, 2):
                     a = str(i)
                     b = str(i + 1)
                     c = str(i + 2)
-                    self.head_layers['contrast%s' % a].sld.real.constraint = (self.tail_layers['contrast%s' % a].sld.real * self.tail_thick * self.headScatLen['contrast%s' % a]) / (self.head_thick * self.tailScatLen['contrast%s' % a] * (Parameter(1, '1') - self.head_layers['contrast%s' % a].vfsolv))
-                    self.head_layers['contrast%s' % b].sld.real.constraint = (self.head_layers['contrast%s' % a].sld.real * self.headScatLen['contrast%s' % b]) / (self.headScatLen['contrast%s' % a])
-                    self.tail_layers['contrast%s' % b].sld.real.constraint = (self.head_layers['contrast%s' % b].sld.real * self.head_thick *self.tailScatLen['contrast%s' % b] * (Parameter(1, '1') - self.head_layers['contrast%s' % b].vfsolv)) / (self.tail_thick * self.headScatLen['contrast%s' % b])
-                    self.tail_layers['contrast%s' % c].sld.real.constraint = (self.tail_layers['contrast%s' % b].sld.real * self.tailScatLen['contrast%s' % c]) / (self.tailScatLen['contrast%s' % b])
-                self.head_layers['contrast%s' % str(self.numberofcontrasts-1)].sld.real.constraint = (self.tail_layers['contrast%s' % str(self.numberofcontrasts-1)].sld.real * self.tail_thick * self.headScatLen['contrast%s' % str(self.numberofcontrasts-1)]) / (self.head_thick * self.tailScatLen['contrast%s' % str(self.numberofcontrasts-1)] * (Parameter(1, '1') - self.head_layers['contrast%s' % str(self.numberofcontrasts-1)].vfsolv))
+                    self.head_layers['contrast%s' % a].sld.real.constraint = \
+                        (self.tail_layers['contrast%s' % a].sld.real * self.tail_thick *
+                         self.headScatLen['contrast%s' % a]) / (self.head_thick * self.tailScatLen['contrast%s' % a] *
+                                                                (Parameter(1, '1') -
+                                                                 self.head_layers['contrast%s' % a].vfsolv))
+                    self.head_layers['contrast%s' % b].sld.real.constraint = \
+                        (self.head_layers['contrast%s' % a].sld.real * self.headScatLen['contrast%s' % b]) / \
+                        (self.headScatLen['contrast%s' % a])
+                    self.tail_layers['contrast%s' % b].sld.real.constraint = \
+                        (self.head_layers['contrast%s' % b].sld.real * self.head_thick *
+                         self.tailScatLen['contrast%s' % b] * (Parameter(1, '1') -
+                                                               self.head_layers['contrast%s' % b].vfsolv)) / \
+                        (self.tail_thick * self.headScatLen['contrast%s' % b])
+                    self.tail_layers['contrast%s' % c].sld.real.constraint = \
+                        (self.tail_layers['contrast%s' % b].sld.real * self.tailScatLen['contrast%s' % c]) / \
+                        (self.tailScatLen['contrast%s' % b])
+                self.head_layers['contrast%s' % str(self.numberofcontrasts-1)].sld.real.constraint = \
+                    (self.tail_layers['contrast%s' % str(self.numberofcontrasts-1)].sld.real * self.tail_thick *
+                     self.headScatLen['contrast%s' % str(self.numberofcontrasts-1)]) / \
+                    (self.head_thick * self.tailScatLen['contrast%s' % str(self.numberofcontrasts-1)] *
+                     (Parameter(1, '1') - self.head_layers['contrast%s' % str(self.numberofcontrasts-1)].vfsolv))
             else:
                 for i in range(0, self.numberofcontrasts - 2, 2):
                     a = str(i)
                     b = str(i + 1)
                     c = str(i + 2)
-                    self.head_layers['contrast%s' % a].sld.real.constraint = (self.tail_layers['contrast%s' % a].sld.real * self.tail_thick * self.headScatLen['contrast%s' % a]) / (self.head_thick * self.tailScatLen['contrast%s' % a] * (Parameter(1, '1') - self.head_layers['contrast%s' % a].vfsolv))
-                    self.head_layers['contrast%s' % b].sld.real.constraint = (self.head_layers['contrast%s' % a].sld.real * self.headScatLen['contrast%s' % b]) / (self.headScatLen['contrast%s' % a])
-                    self.tail_layers['contrast%s' % b].sld.real.constraint = (self.head_layers['contrast%s' % b].sld.real * self.head_thick * self.tailScatLen['contrast%s' % b] * (Parameter(1, '1') - self.head_layers['contrast%s' % b].vfsolv)) / (self.tail_thick * self.headScatLen['contrast%s' % b])
-                    self.tail_layers['contrast%s' % c].sld.real.constraint = (self.tail_layers['contrast%s' % b].sld.real * self.tailScatLen['contrast%s' % c]) / (self.tailScatLen['contrast%s' % b])
-                self.head_layers['contrast%s' % str(self.numberofcontrasts-2)].sld.real.constraint = (self.tail_layers['contrast%s' % str(self.numberofcontrasts-2)].sld.real * self.tail_thick * self.headScatLen['contrast%s' % str(self.numberofcontrasts-2)]) / (self.head_thick * self.tailScatLen['contrast%s' % str(self.numberofcontrasts-2)] * (Parameter(1, '1') - self.head_layers['contrast%s' % str(self.numberofcontrasts-2)].vfsolv))
-                self.head_layers['contrast%s' % str(self.numberofcontrasts-1)].sld.real.constraint = (self.head_layers['contrast%s' % str(self.numberofcontrasts-2)].sld.real * self.headScatLen['contrast%s' % str(self.numberofcontrasts-1)]) / (self.headScatLen['contrast%s' % str(self.numberofcontrasts-2)])
-                self.tail_layers['contrast%s' % str(self.numberofcontrasts-1)].sld.real.constraint = (self.head_layers['contrast%s' % str(self.numberofcontrasts-1)].sld.real * self.head_thick * self.tailScatLen['contrast%s' % str(self.numberofcontrasts-1)] * (Parameter(1, '1') - self.head_layers['contrast%s' % str(self.numberofcontrasts-1)].vfsolv)) / (self.tail_thick * self.headScatLen['contrast%s' % str(self.numberofcontrasts-1)])
+                    self.head_layers['contrast%s' % a].sld.real.constraint = \
+                        (self.tail_layers['contrast%s' % a].sld.real * self.tail_thick *
+                         self.headScatLen['contrast%s' % a]) / (self.head_thick * self.tailScatLen['contrast%s' % a] *
+                                                                (Parameter(1, '1') -
+                                                                 self.head_layers['contrast%s' % a].vfsolv))
+                    self.head_layers['contrast%s' % b].sld.real.constraint = \
+                        (self.head_layers['contrast%s' % a].sld.real * self.headScatLen['contrast%s' % b]) / \
+                        (self.headScatLen['contrast%s' % a])
+                    self.tail_layers['contrast%s' % b].sld.real.constraint = \
+                        (self.head_layers['contrast%s' % b].sld.real * self.head_thick *
+                         self.tailScatLen['contrast%s' % b] * (Parameter(1, '1') -
+                                                               self.head_layers['contrast%s' % b].vfsolv)) / \
+                        (self.tail_thick * self.headScatLen['contrast%s' % b])
+                    self.tail_layers['contrast%s' % c].sld.real.constraint = \
+                        (self.tail_layers['contrast%s' % b].sld.real * self.tailScatLen['contrast%s' % c]) / \
+                        (self.tailScatLen['contrast%s' % b])
+                self.head_layers['contrast%s' % str(self.numberofcontrasts-2)].sld.real.constraint = \
+                    (self.tail_layers['contrast%s' % str(self.numberofcontrasts-2)].sld.real * self.tail_thick *
+                     self.headScatLen['contrast%s' % str(self.numberofcontrasts-2)]) / \
+                    (self.head_thick * self.tailScatLen['contrast%s' % str(self.numberofcontrasts-2)] *
+                     (Parameter(1, '1') - self.head_layers['contrast%s' % str(self.numberofcontrasts-2)].vfsolv))
+                self.head_layers['contrast%s' % str(self.numberofcontrasts-1)].sld.real.constraint = \
+                    (self.head_layers['contrast%s' % str(self.numberofcontrasts-2)].sld.real *
+                     self.headScatLen['contrast%s' % str(self.numberofcontrasts-1)]) / \
+                    (self.headScatLen['contrast%s' % str(self.numberofcontrasts-2)])
+                self.tail_layers['contrast%s' % str(self.numberofcontrasts-1)].sld.real.constraint = \
+                    (self.head_layers['contrast%s' % str(self.numberofcontrasts-1)].sld.real *
+                     self.head_thick * self.tailScatLen['contrast%s' % str(self.numberofcontrasts-1)] *
+                     (Parameter(1, '1') - self.head_layers['contrast%s' % str(self.numberofcontrasts-1)].vfsolv)) / \
+                    (self.tail_thick * self.headScatLen['contrast%s' % str(self.numberofcontrasts-1)])
+
 
     def getStructures(self):
         self.setConstraints()
-        self.structures = {}
-        self.tail_layers['contrast0'].sld.real.setp(vary = True, bounds = (self.guessSLD() - (0.5 * self.guessSLD()),
-                                                                           self.guessSLD() + (0.5 * self.guessSLD())))
+        self.tail_layers['contrast0'].sld.real.setp(vary = True, bounds=(self.guessSLD() - (0.25 * self.guessSLD()),
+                                                                         self.guessSLD() + (0.25 * self.guessSLD())))
         for i in range(0, self.numberofcontrasts):
-            self.structures['contrast%s' %i] = (self.supers['contrast%s' % i] | self.tail_layers['contrast%s' % i] | self.head_layers['contrast%s' % i] | self.sub_layers['contrast%s' % i])
+            self.structures['contrast%s' %i] = (self.supers['contrast%s' % i] | self.tail_layers['contrast%s' % i] |
+                                                self.head_layers['contrast%s' % i] | self.sub_layers['contrast%s' % i])
+
+    @property
+    def apmCalc(self):
+        apmc = self.tailScatLen['contrast0'] / (self.tail_layers['contrast0'].sld.real.value * 1E-6 *
+                                      self.tail_layers['contrast0'].thick.value)
+        apmcerr = (self.tailScatLen['contrast0'] * self.tail_layers['contrast0'].thick.stderr) / \
+                  (self.tail_layers['contrast0'].thick.value * self.tail_layers['contrast0'].thick.value *
+                   self.tail_layers['contrast0'].sld.real.value * 1E-6)
+        return apmc, apmcerr
+
+    @property
+    def molecularVolumes(self):
+        head = self.headScatLen['contrast0'] / (self.head_layers['contrast0'].sld.real.value * 1E-6 *
+                                      (1 - self.head_layers['contrast0'].vfsolv.value))
+        tail = self.tailScatLen['contrast0'] / (self.tail_layers['contrast0'].sld.real.value * 1E-6)
+        total = head + tail
+        return head, tail, total
