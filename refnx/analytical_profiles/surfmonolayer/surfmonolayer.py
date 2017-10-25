@@ -142,5 +142,7 @@ class SurfMono(Component):
     def getStructures(self):
         self.setConstraints()
         self.structures = {}
+        self.tail_layers['contrast0'].sld.real.setp(vary = True, bounds = (self.guessSLD() - (0.5 * self.guessSLD()),
+                                                                           self.guessSLD() + (0.5 * self.guessSLD())))
         for i in range(0, self.numberofcontrasts):
             self.structures['contrast%s' %i] = (self.supers['contrast%s' % i] | self.tail_layers['contrast%s' % i] | self.head_layers['contrast%s' % i] | self.sub_layers['contrast%s' % i])
