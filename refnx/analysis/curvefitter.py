@@ -747,11 +747,11 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
             depends = set(flatten(constrain_param.dependencies()))
             # we only need the dependencies that are varying parameters
             rdepends = depends.intersection(set(varying_parameters))
-            if len(rdepends) != 0:
+            if rdepends:
                 relevant_depends.append(rdepends)
 
         # don't need duplicates
-        if len(constrained_params) == 0:
+        if not constrained_params:
             relevant_depends = set(relevant_depends)
         else:
             relevant_depends = set.union(*map(set, relevant_depends))
