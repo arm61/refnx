@@ -222,4 +222,17 @@ class SurfMono(Component):
                                       (1 - self.head_layers['contrast0'].vfsolv.value))
         tail = self.tailScatLen['contrast0'] / (self.tail_layers['contrast0'].sld.real.value * 1E-6)
         total = head + tail
-        return head, tail, total
+        a = self.headScatLen[0] / (self.structures['contrast0'][1].sld.real.value * 1E-6 *
+                                   self.structures['contrast0'][1].thick.value) * \
+            self.structures['contrast0'][2].thick.stderr
+        b = (self.structures['contrast0'][2].thick.value * self.tailScatLen[0]) / \
+            ((self.structures['contrast0'][1].sld.real.value * 1E-6) ** 2 *
+             self.structures['contrast0'][1].thick.value) * self.structures['contrast0'][1].sld.real.stderr * 1E-6
+        c = (self.structures['contrast0'][2].thick.value * self.tailScatLen[0]) / \
+            (self.structures['contrast0'][1].sld.real.value * 1E-6 *
+             (self.structures['contrast0'][1].thick.value ** 2)) * self.structures['contrast0'][1].thick.stderr
+        headerr = np.sqrt(a**2 + b**2 + c**2)
+        tailerr = self.tailScatLen[0] / ((self.structures['contrast0'][1].sld.real.value * 1E-6) ** 2) * \
+                  (self.structures['contrast0'][1].sld.real.stderr * 1E-6)
+        totalerr = np.sqrt((headerr ** 2) + (tailerr ** 2))
+        return head, headerr, tail, tailerr, total, totalerr
