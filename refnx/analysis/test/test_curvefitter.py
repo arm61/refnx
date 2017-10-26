@@ -189,6 +189,59 @@ class TestCurveFitter(object):
                 raise
 
 
+class TestCurveFitterConstrained(object):
+
+    def setup_method(self):
+        # Reproducible results!
+        np.random.seed(123)
+
+        self.m_true = -0.9594
+        self.b_true = 4.294
+        self.f_true = 0.534
+        self.m_ls = -1.1040757010910947
+        self.b_ls = 5.4405552502319505
+
+        # Generate some synthetic data from the model.
+        N = 50
+        x = np.sort(10 * np.random.rand(N))
+        y_err = 0.1 + 0.5 * np.random.rand(N)
+        y = self.m_true * x + self.b_true
+        y += np.abs(self.f_true * y) * np.random.randn(N)
+        y += y_err * np.random.randn(N)
+
+        self.data = Data1D(data=(x, y, y_err))
+
+        parameter_b = Parameter(self.b_ls, 'b')
+        parameter_m = Parameter(self.m_ls, 'm', vary=True, bounds=(-100, 100))
+
+        parameter_b.constraint = parameter_m.value * 0.5
+        parameter_m.setp(vary=True, bounds=(-100, 100))
+
+        self.p = parameter_b
+        self.p |= parameter_m
+
+        self.model = Model(self.p, fitfunc=line)
+        self.objective = Objective(self.model, self.data)
+        assert_(len(self.objective.varying_parameters()) == 1)
+
+        mod = np.array([4.78166609, 4.42364699, 4.16404064, 3.50343504,
+                        3.4257084, 2.93594347, 2.92035638, 2.67533842,
+                        2.28136038, 2.19772983, 1.99295496, 1.93748334,
+                        1.87484436, 1.65161016, 1.44613461, 1.11128101,
+                        1.04584535, 0.86055984, 0.76913963, 0.73906649,
+                        0.73331407, 0.68350418, 0.65216599, 0.59838566,
+                        0.13070299, 0.10749131, -0.01010195, -0.10010155,
+                        -0.29495372, -0.42817431, -0.43122391, -0.64637715,
+                        -1.30560686, -1.32626428, -1.44835768, -1.52589881,
+                        -1.56371158, -2.12048349, -2.24899179, -2.50292682,
+                        -2.53576659, -2.55797996, -2.60870542, -2.7074727,
+                        -3.93781479, -4.12415366, -4.42313742, -4.98368609,
+                        -5.38782395, -5.44077086])
+        self.mod = mod
+
+        self.mcfitter = CurveFitter(self.objective)
+
+
 def gauss(x, p0):
     p = np.array(p0)
     return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)

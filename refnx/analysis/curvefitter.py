@@ -744,21 +744,26 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
         # parameters
         relevant_depends = []
         for constrain_param in constrained_params:
-            depends = set(flatten(constrain_param.dependencies))
+            depends = set(flatten(constrain_param.dependencies()))
             # we only need the dependencies that are varying parameters
             rdepends = depends.intersection(set(varying_parameters))
-            relevant_depends.append(rdepends)
+            if len(rdepends) != 0:
+                relevant_depends.append(rdepends)
 
         # don't need duplicates
-        relevant_depends = set(relevant_depends)
+        if len(constrained_params) == 0:
+            relevant_depends = set(relevant_depends)
+        else:
+            relevant_depends = set.union(*map(set, relevant_depends))
 
         for constrain_param in constrained_params:
-            depends = set(flatten(constrain_param.dependencies))
+            depends = set(flatten(constrain_param.dependencies()))
             # to be given a chain the constrained parameter has to depend
             # on a varying parameter
             if depends.intersection(relevant_depends):
+                relevant_depends_list = list(relevant_depends)
                 constrain_param.chain = np.zeros_like(
-                    relevant_depends[0].chain)
+                    relevant_depends_list[0].chain)
 
                 for index, _ in np.ndenumerate(constrain_param.chain):
                     for rdepend in relevant_depends:
