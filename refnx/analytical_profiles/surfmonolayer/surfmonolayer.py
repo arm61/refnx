@@ -13,7 +13,7 @@ class SurfMono(Component):
     A surfactant monolayer component, consisting of a series of contrasts where the lipid structure is fixed
     across the different contrasts
     """
-    def __init__(self, headScatLen, tailScatLen, subPhaseSLD, superPhaseSLD, thick, apm, name=''):
+    def __init__(self, headScatLen, tailScatLen, subPhaseSLD, superPhaseSLD, thick, apm, name='', tailVolume = 0):
         """
         Parameters
         ----------
@@ -66,6 +66,7 @@ class SurfMono(Component):
         self.head_layers = {}
         self.tail_layers = {}
         self.sub_layers = {}
+        self.tailVolume = tailVolume
 
 
     def guessSLD(self):
@@ -74,9 +75,14 @@ class SurfMono(Component):
 
 
     def setSLD(self):
-        self.tailSLDs['contrast0'] = Parameter(self.guessSLD(), 'tail_layer_contrast0',
-                                               bounds=(self.guessSLD() - (0.5 * self.guessSLD()), self.guessSLD() +
-                                                       (0.5 * self.guessSLD())), vary=True)
+        if self.tailVolume == 0:
+            self.tailSLDs['contrast0'] = Parameter(self.guessSLD(), 'tail_layer_contrast0',
+                                                   bounds=(self.guessSLD() - (0.5 * self.guessSLD()), self.guessSLD() +
+                                                           (0.5 * self.guessSLD())), vary=True)
+        else:
+            a = self.tailScatLen['contrast0'] / self.tailVolume * 1E6
+            self.tailSLDs['contrast0'] = Parameter(a,'tail_layer_contrast0', bounds=(a - (0.25 * a), a + (0.25 * a)),
+                                                                                      vary=True)
         self.headSLDs['contrast0'] = Parameter(1., 'head_layer_contrast0')
         for i in range(1, self.numberofcontrasts):
             self.tailSLDs['contrast%s' % i] = Parameter(1, 'tail_layer_contrast%s' % i)
@@ -218,8 +224,26 @@ class SurfMono(Component):
 
     @property
     def molecularVolumes(self):
-        head = self.headScatLen['contrast0'] / (self.head_layers['contrast0'].sld.real.value * 1E-6 *
-                                      (1 - self.head_layers['contrast0'].vfsolv.value))
+        head = self.headScatLen['contrast0'] / ((self.head_layers['contrast0'].sld.real.value * 1E-6)) * \
+               (1 - self.head_layers['contrast0'].vfsolv.value)
         tail = self.tailScatLen['contrast0'] / (self.tail_layers['contrast0'].sld.real.value * 1E-6)
         total = head + tail
-        return head, tail, total
+        a = (self.tailScatLen['contrast0'] * self.head_layers['contrast0'].thick.stderr) / \
+            ((self.tail_layers['contrast0'].sld.real.value * 1E-6) * self.tail_layers['contrast0'].thick.value) * \
+            (1 - self.head_layers['contrast0'].vfsolv.value) ** 2
+        b = (self.tailScatLen['contrast0'] * self.head_layers['contrast0'].thick.value *
+             self.tail_layers['contrast0'].thick.stderr) / ((self.tail_layers['contrast0'].sld.real.value * 1E-6) *
+                                                            self.tail_layers['contrast0'].thick.value ** 2) * \
+            (1 - self.head_layers['contrast0'].vfsolv.value) ** 2
+        c = (self.tailScatLen['contrast0'] * self.head_layers['contrast0'].thick.value *
+             self.tail_layers['contrast0'].sld.real.stderr * 1E-6) / \
+            ((self.tail_layers['contrast0'].sld.real.value * 1E-6) ** 2 * self.tail_layers['contrast0'].thick.value) * \
+            (1 - self.head_layers['contrast0'].vfsolv.value) ** 2
+        d = (self.tailScatLen['contrast0'] * self.head_layers['contrast0'].thick.value) / \
+            ((self.tail_layers['contrast0'].sld.real.value * 1E-6) * self.tail_layers['contrast0'].thick.value) * \
+            (2 * self.head_layers['contrast0'].vfsolv.value - 2) * self.head_layers['contrast0'].vfsolv.stderr
+        headerr = np.sqrt(a**2 + b**2 + c**2 + d**2)
+        tailerr = np.mag(self.tailScatLen['contrast0'] / ((self.structures['contrast0'][1].sld.real.value * 1E-6) ** 2)
+                         * (self.structures['contrast0'][1].sld.real.stderr * 1E-6))
+        totalerr = np.sqrt((headerr ** 2) + (tailerr ** 2))
+        return head, headerr, tail, tailerr, total, totalerr
