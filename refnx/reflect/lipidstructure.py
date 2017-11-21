@@ -28,8 +28,6 @@ class LipidStructure(object):
         self.solvent_width = possibly_create_parameter(widths[2], name='solvent width')
         self.tailsolv_sep = possibly_create_parameter(sep[0], name='tail-solv separation')
         self.tailhead_sep = possibly_create_parameter(sep[0], name='tail-head separation')
-        self.headsolv_sep = possibly_create_parameter(sep[0]-sep[1], name='head-solv separation')
-        self.headsolv_sep.constraint = self.tailsolv_sep - self.tailhead_sep
         self.apm = possibly_create_parameter(apm, name='area per molecule')
         self.solv_number_density = possibly_create_parameter(solv_number_density, name='solvent number density')
 
@@ -39,12 +37,14 @@ class LipidStructure(object):
                                                            widths[1] + (0.25 * widths[1])))
         self.solvent_width.setp(widths[2], vary=True, bounds=(widths[2] - (0.25 * widths[2]),
                                                            widths[2] + (0.25 * widths[2])))
-        self.tailsolv_sep.setp(sep[0], vary=True, bounds=(sep[0] - (0.25 * sep[0]),
+        self.tailsolv_sep.setp(float(sep[0]), vary=True, bounds=(sep[0] - (0.25 * sep[0]),
                                                           sep[0] + (0.25 * sep[0])))
-        self.tailhead_sep.setp(sep[1], vary=True, bounds=(sep[1] - (0.25 * sep[1]),
+        self.tailhead_sep.setp(float(sep[1]), vary=True, bounds=(sep[1] - (0.25 * sep[1]),
                                                           sep[1] + (0.25 * sep[1])))
         self.apm.setp(apm, vary=True, bounds=(apm - (0.25 * apm),
                                               apm + (0.25 * apm)))
+        self.headsolv_sep = possibly_create_parameter(sep[0]-sep[1], name='head-solv separation')
+        self.headsolv_sep.constraint = self.tailsolv_sep - self.tailhead_sep
         self.z = np.asarray([])
 
     @property
@@ -58,22 +58,22 @@ class LipidStructure(object):
         p_solv.extend([self.solv_b, self.solvent_width])
         p_apm = Parameters(name='System parameters')
         p_apm.extend([self.apm])
-        p.extend([p_tail, p_head, p_solv,p_apm])
+        p.extend([p_tail, p_head, p_solv, p_apm])
         return p
 
     def numberdensity(self):
         maximum = self.tail_width.value * 10
         self.z = np.arange(-maximum, maximum, 0.01)
-        tail_nd = gaussian(gaussian_height(1 / self.apm.value, self.tail_width.value), self.z, self.tail_width.value)
-        head_nd = gaussian(gaussian_height(1 / self.apm.value, self.head_width.value), self.z, self.head_width.value)
-        solv_nd = tanh(self.solv_number_density.value, self.z, self.solvent_width.value)
+        tail_nd = gaussian(gaussian_height(1 / self.apm.value, self.tail_width.value), self.z, self.tail_width.value, self.tailhead_sep.value)
+        head_nd = gaussian(gaussian_height(1 / self.apm.value, self.head_width.value), self.z, self.head_width.value, 0)
+        solv_nd = tanh(self.solv_number_density.value, self.z, self.solvent_width.value, self.headsolv_sep.value)
         return tail_nd, head_nd, solv_nd
 
-def gaussian(height, x, width):
-    return height * np.exp((-4 * np.square(x)) / np.square(width))
+def gaussian(height, x, width, offset):
+    return height * np.exp((-4 * np.square(x + offset)) / np.square(width))
 
 def gaussian_height(area, width):
     return (2 * area) / (np.sqrt(np.pi) * width)
 
-def tanh(height, x, width):
-    return height * (0.5 + (0.5 * np.tanh(np.divide(x, width))))
+def tanh(height, x, width, offset):
+    return height * (0.5 + (0.5 * np.tanh(np.divide(x - offset, width))))

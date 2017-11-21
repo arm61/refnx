@@ -123,8 +123,8 @@ class LipidPSF(object):
         return self._parameters
 
 def reflectivity(x, lipidstructure, scale=1., bkg=1e-7, dq=5.):
-    #return _smearing_constant(x, lipidstructure, scale, bkg, dq)
-    return refcalc(x, lipidstructure, scale, bkg)
+    return _smearing_constant(x, lipidstructure, scale, bkg, dq)
+    #return refcalc(x, lipidstructure, scale, bkg)
 
 import time
 
@@ -204,7 +204,7 @@ def fruit_loops(ydash, z, q_values):
     return p
 
 def fourier_transform(q_values, z, ydash):
-    cores = 3
+    cores = 7
     chunks = [q_values[i::cores] for i in range(cores)]
     pool = Pool(processes=cores)
     func = partial(fruit_loops, ydash, z)

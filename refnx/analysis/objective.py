@@ -522,6 +522,7 @@ class Objective(BaseObjective):
 
         # covar = J.T x J.
         # not sure why this is preferred over Hessian
+        print(np.matmul(jac.T, jac))
         covar = np.linalg.inv(np.matmul(jac.T, jac))
 
         if used_residuals_scaler:
