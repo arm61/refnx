@@ -1,12 +1,13 @@
 import numpy as np
 from refnx.analysis import (Parameters, Parameter, possibly_create_parameter)
 from scipy.interpolate import InterpolatedUnivariateSpline
+from refnx.reflect import _cfourier as cfourier
 
 _FWHM = 2 * np.sqrt(2 * np.log(2.))
 
 
 class LipidPSF(object):
-    def __init__(self, lipidstructure, scale=1, bkg=1e-7, name='', dq=5.):
+    def __init__(self, lipidstructure, scale=1, bkg=1e-7, name='', dq=5., threads=0):
         """
         :param structure: refnx.reflect.LipidStructure
             the structure of the lipids of interest
@@ -26,6 +27,7 @@ class LipidPSF(object):
         self._dq = possibly_create_parameter(dq, name='dq - resolution')
         self._lipidstructure = None
         self.lipidstructure = lipidstructure
+        self.threads = threads
 
     def __call__(self, x, x_err=None):
         return self.model(x, x_err=x_err)
@@ -83,7 +85,7 @@ class LipidPSF(object):
             x_err = float(self.dq)
 
         return reflectivity(x, self.lipidstructure, scale=self.scale.value,
-                                  bkg=self.bkg.value, dq=x_err)
+                                  bkg=self.bkg.value, dq=x_err, threads=self.threads)
 
     def lnprob(self):
         """
@@ -122,22 +124,23 @@ class LipidPSF(object):
         self.lipidstructure = self._lipidstructure
         return self._parameters
 
-def reflectivity(x, lipidstructure, scale=1., bkg=1e-7, dq=5.):
-    return _smearing_constant(x, lipidstructure, scale, bkg, dq)
+
+def reflectivity(x, lipidstructure, scale=1., bkg=1e-7, dq=5., threads=0):
+    return _smearing_constant(x, lipidstructure, scale, bkg, dq, threads)
     #return refcalc(x, lipidstructure, scale, bkg)
 
 import time
 
-def refcalc(x, lipidstructure, scale=1., bkg=1e-7):
+def refcalc(x, lipidstructure, scale=1., bkg=1e-7, threads=0):
     if len(lipidstructure.numberdensity()[0]) != len(lipidstructure.z):
         print(lipidstructure.z, lipidstructure.numberdensity()[0])
     tail_nddash = analytical_derivative(lipidstructure.z, lipidstructure.numberdensity()[0])
     head_nddash = analytical_derivative(lipidstructure.z, lipidstructure.numberdensity()[1])
     solv_nddash = analytical_derivative(lipidstructure.z, lipidstructure.numberdensity()[2])
     z_ft = lipidstructure.z[0:-1]
-    tail_ft = fourier_transform(x, z_ft, tail_nddash)
-    head_ft = fourier_transform(x, z_ft, head_nddash)
-    solv_ft = fourier_transform(x, z_ft, solv_nddash)
+    tail_ft = fourier_transform(x, z_ft, tail_nddash, threads)
+    head_ft = fourier_transform(x, z_ft, head_nddash, threads)
+    solv_ft = fourier_transform(x, z_ft, solv_nddash, threads)
     htt = np.power(np.absolute(tail_ft), 2)
     hhh = np.power(np.absolute(head_ft), 2)
     hss = np.power(np.absolute(solv_ft), 2)
@@ -153,7 +156,7 @@ def refcalc(x, lipidstructure, scale=1., bkg=1e-7):
     r = r * scale + bkg
     return r
 
-def _smearing_constant(q, lipidstructure, scale=1., bkg=1e-7, dq=5.):
+def _smearing_constant(q, lipidstructure, scale=1., bkg=1e-7, dq=5., threads=0):
     if dq < 0.5:
         return refcalc(q, lipidstructure, scale, bkg)
 
@@ -179,7 +182,7 @@ def _smearing_constant(q, lipidstructure, scale=1., bkg=1e-7, dq=5.):
     gauss_x = np.linspace(-1.7 * dq, 1.7 * dq, gaussnum)
     gauss_y = gauss(gauss_x, dq / _FWHM)
 
-    rvals = refcalc(xlin, lipidstructure, scale, bkg)
+    rvals = refcalc(xlin, lipidstructure, scale, bkg, threads)
     smeared_rvals = np.convolve(rvals, gauss_y, mode='same')
     interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
 
@@ -203,8 +206,8 @@ def fruit_loops(ydash, z, q_values):
         p[i] = np.sum(np.multiply(ydash, np.exp(np.multiply(np.multiply(-1j, z), q))))
     return p
 
-def fourier_transform(q_values, z, ydash):
-    cores = 7
+def fourier_transform(q_values, z, ydash, threads):
+    cores = threads
     chunks = [q_values[i::cores] for i in range(cores)]
     pool = Pool(processes=cores)
     func = partial(fruit_loops, ydash, z)
@@ -221,5 +224,5 @@ def fourier_transform(q_values, z, ydash):
 def slowfour(q_values, z, ydash):
     p = np.zeros_like(q_values, dtype=complex)
     for i, q in enumerate(q_values):
-        p[i] = np.sum(np.multiply(ydash, np.exp(np.multiply(np.multiply(-1j, z), q))))
+        p[i] = np.sum(ydash * np.exp(-1j * z * q))
     return p

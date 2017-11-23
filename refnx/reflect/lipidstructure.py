@@ -1,7 +1,9 @@
 import numpy as np
+from six.moves import UserList
 from refnx.analysis import Parameters, Parameter, possibly_create_parameter
 
-class LipidStructure(object):
+
+class LipidStructure(UserList):
     def __init__(self, scatlens, widths, sep, apm, solv_number_density=0.0334277, name=''):
         """
         :param name: str
@@ -68,6 +70,28 @@ class LipidStructure(object):
         head_nd = gaussian(gaussian_height(1 / self.apm.value, self.head_width.value), self.z, self.head_width.value, 0)
         solv_nd = tanh(self.solv_number_density.value, self.z, self.solvent_width.value, self.headsolv_sep.value)
         return tail_nd, head_nd, solv_nd
+
+    @property
+    def components(self):
+        return self.data
+
+    def lnprob(self):
+        """
+        log-probability for the interfacial structure. Note that if a given
+        component is present more than once in a Structure then it's log-prob
+        will be counted twice.
+
+        Returns
+        -------
+        lnprob : float
+            log-prior for the Structure.
+        """
+        lnprob = 0
+        for component in self.components:
+            lnprob += component.lnprob()
+
+        return lnprob
+
 
 def gaussian(height, x, width, offset):
     return height * np.exp((-4 * np.square(x + offset)) / np.square(width))
