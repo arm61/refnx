@@ -64,7 +64,6 @@ extern "C" {
     coefP[4 * M + 9] - SLD of layer M, real part (10**-6 Å**-2)
 
     coefP[4 * M + 10] - SLD of layer M, imaginary part (10**-6 Å**-2)
-
     coefP[4 * M + 11] - roughness between layer M - 1 / M (Å)
 */
 

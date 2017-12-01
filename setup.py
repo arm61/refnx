@@ -168,6 +168,17 @@ def setup_package():
                                   )
             ext_modules.append(_creflect)
 
+	    # fourier extension module
+            _cfourier = Extension(
+                                  name='refnx.reflect._cfourier',
+                                  sources=['src/_cfourier.pyx',
+                                           'src/fourier.cpp'],
+                                  include_dirs=[numpy_include],
+                                  language='c++',
+                                  extra_compile_args=[], 
+                                  extra_link_args=['-fopenmp']
+                                  )
+            ext_modules.append(_cfourier)
             _cevent = Extension(
                                 name='refnx.reduce._cevent',
                                 sources=['src/_cevent.pyx'],
