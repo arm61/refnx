@@ -4,7 +4,7 @@ from refnx.analysis import Parameters, Parameter, possibly_create_parameter
 
 
 class LipidStructure(UserList):
-    def __init__(self, scatlens, widths, sep, apm, solv_number_density=0.0334277, name=''):
+    def __init__(self, scatlens, widths, sep, apm, solv_number_density=0.0334277, name='', width=100):
         """
         :param name: str
             name for the structure
@@ -48,6 +48,7 @@ class LipidStructure(UserList):
         self.headsolv_sep = possibly_create_parameter(sep[0]-sep[1], name='head-solv separation')
         self.headsolv_sep.constraint = self.tailsolv_sep - self.tailhead_sep
         self.z = np.asarray([])
+        self.width = width
 
     @property
     def parameters(self):
@@ -64,7 +65,7 @@ class LipidStructure(UserList):
         return p
 
     def numberdensity(self):
-        maximum = self.tail_width.value * 10
+        maximum = self.width / 2.
         self.z = np.arange(-maximum, maximum, 0.01)
         tail_nd = gaussian(gaussian_height(1 / self.apm.value, self.tail_width.value), self.z, self.tail_width.value, self.tailhead_sep.value)
         head_nd = gaussian(gaussian_height(1 / self.apm.value, self.head_width.value), self.z, self.head_width.value, 0)
