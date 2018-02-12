@@ -29,7 +29,7 @@ class LipidStructure(UserList):
         self.head_width = possibly_create_parameter(widths[1], name='head width')
         self.solvent_width = possibly_create_parameter(widths[2], name='solvent width')
         self.tailsolv_sep = possibly_create_parameter(sep[0], name='tail-solv separation')
-        self.tailhead_sep = possibly_create_parameter(sep[0], name='tail-head separation')
+        self.tailhead_sep = possibly_create_parameter(sep[1], name='tail-head separation')
         self.apm = possibly_create_parameter(apm, name='area per molecule')
         self.solv_number_density = possibly_create_parameter(solv_number_density, name='solvent number density')
 

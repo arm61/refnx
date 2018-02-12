@@ -138,9 +138,9 @@ def refcalc(x, lipidstructure, scale=1., bkg=1e-7, threads=0):
     head_nddash = analytical_derivative(lipidstructure.z, lipidstructure.numberdensity()[1])
     solv_nddash = analytical_derivative(lipidstructure.z, lipidstructure.numberdensity()[2])
     z_ft = lipidstructure.z[0:-1]
-    tail_ft = fourier_transform(x, z_ft, tail_nddash, threads)
-    head_ft = fourier_transform(x, z_ft, head_nddash, threads)
-    solv_ft = fourier_transform(x, z_ft, solv_nddash, threads)
+    tail_ft = cfourier.ft(x, z_ft, tail_nddash, 0.01)
+    head_ft = cfourier.ft(x, z_ft, head_nddash, 0.01)
+    solv_ft = cfourier.ft(x, z_ft, solv_nddash, 0.01)
     htt = np.power(np.absolute(tail_ft), 2)
     hhh = np.power(np.absolute(head_ft), 2)
     hss = np.power(np.absolute(solv_ft), 2)

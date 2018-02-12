@@ -1,0 +1,1050 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>refnx.reflect package &#8212; refnx 0.0.12.dev0+e14c567 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.12.dev0+e14c567',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="refnx-reflect-package">
+<h1>refnx.reflect package<a class="headerlink" href="#refnx-reflect-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-refnx.reflect.reflect_model">
+<span id="refnx-reflect-reflect-model-module"></span><h2>refnx.reflect.reflect_model module<a class="headerlink" href="#module-refnx.reflect.reflect_model" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="refnx.reflect.reflect_model.ReflectModel">
+<em class="property">class </em><code class="descclassname">refnx.reflect.reflect_model.</code><code class="descname">ReflectModel</code><span class="sig-paren">(</span><em>structure</em>, <em>scale=1</em>, <em>bkg=1e-07</em>, <em>name=''</em>, <em>dq=5.0</em>, <em>threads=0</em>, <em>quad_order=17</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/reflect_model.html#ReflectModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.reflect_model.ReflectModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<dl class="attribute">
+<dt id="refnx.reflect.reflect_model.ReflectModel.bkg">
+<code class="descname">bkg</code><a class="headerlink" href="#refnx.reflect.reflect_model.ReflectModel.bkg" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>bkg</strong> : Parameter</p>
+<blockquote class="last">
+<div><p>linear background added to all model values.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.reflect_model.ReflectModel.dq">
+<code class="descname">dq</code><a class="headerlink" href="#refnx.reflect.reflect_model.ReflectModel.dq" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>dq</strong> : Parameter</p>
+<blockquote class="last">
+<div><p>If <cite>dq.value == 0</cite> then no resolution smearing is employed.
+If <cite>dq.value &gt; 0</cite>, then a constant dQ/Q resolution smearing is
+employed.  For 5% resolution smearing supply 5. However, if
+<cite>x_err</cite> is supplied to the <cite>model</cite> method, then that overrides any
+setting reported here.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="refnx.reflect.reflect_model.ReflectModel.lnprob">
+<code class="descname">lnprob</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/reflect_model.html#ReflectModel.lnprob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.reflect_model.ReflectModel.lnprob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional log-probability terms for the reflectivity model. Do not
+include log-probability terms for model parameters, these are
+automatically calculated elsewhere.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>lnprob</strong> : float</p>
+<blockquote class="last">
+<div><p>log-probability of structure.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="refnx.reflect.reflect_model.ReflectModel.model">
+<code class="descname">model</code><span class="sig-paren">(</span><em>x</em>, <em>p=None</em>, <em>x_err=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/reflect_model.html#ReflectModel.model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.reflect_model.ReflectModel.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the reflectivity of this model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>x</strong> : float or np.ndarray</p>
+<blockquote>
+<div><p>q values for the calculation.</p>
+</div></blockquote>
+<p><strong>p</strong> : Parameters instance, optional</p>
+<blockquote>
+<div><p>parameters required to calculate the model</p>
+</div></blockquote>
+<p><strong>x_err</strong> : np.ndarray</p>
+<blockquote>
+<div><p>dq resolution smearing values for the dataset being considered.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>reflectivity</strong> : np.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.reflect_model.ReflectModel.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.reflect_model.ReflectModel.parameters" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>parameters</strong> : <cite>Parameters</cite></p>
+<blockquote class="last">
+<div><p>The Parameters associated with this model.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.reflect_model.ReflectModel.scale">
+<code class="descname">scale</code><a class="headerlink" href="#refnx.reflect.reflect_model.ReflectModel.scale" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>scale</strong> : Parameter</p>
+<blockquote class="last">
+<div><p>scale factor. All model values are multiplied by this value before
+the background is added.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.reflect_model.ReflectModel.structure">
+<code class="descname">structure</code><a class="headerlink" href="#refnx.reflect.reflect_model.ReflectModel.structure" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>structure</strong> : Structure</p>
+<blockquote class="last">
+<div><p>Structure objects describe the interface of a reflectometry sample.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="refnx.reflect.reflect_model.gauss_legendre">
+<code class="descclassname">refnx.reflect.reflect_model.</code><code class="descname">gauss_legendre</code><span class="sig-paren">(</span><em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/reflect_model.html#gauss_legendre"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.reflect_model.gauss_legendre" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="refnx.reflect.reflect_model.reflectivity">
+<code class="descclassname">refnx.reflect.reflect_model.</code><code class="descname">reflectivity</code><span class="sig-paren">(</span><em>q</em>, <em>slabs</em>, <em>scale=1.0</em>, <em>bkg=0.0</em>, <em>dq=5.0</em>, <em>quad_order=17</em>, <em>threads=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/reflect_model.html#reflectivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.reflect_model.reflectivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abeles matrix formalism for calculating reflectivity from a stratified
+medium.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>q</strong> : np.ndarray</p>
+<blockquote>
+<div><p>The qvalues required for the calculation.
+<span class="math">\(Q=\frac{4Pi}{\lambda}\sin(\Omega)\)</span>.
+Units = Angstrom**-1</p>
+</div></blockquote>
+<p><strong>slabs</strong> : np.ndarray</p>
+<blockquote>
+<div><p>coefficients required for the calculation, has shape (2 + N, 4),
+where N is the number of layers</p>
+<p>slabs[0, 0] - ignored
+slabs[N, 0] - thickness of layer N
+slabs[N+1, 0] - ignored</p>
+<p>slabs[0, 1] - SLD_real of fronting (/1e-6 Angstrom**-2)
+slabs[N, 1] - SLD_real of layer N (/1e-6 Angstrom**-2)
+slabs[-1, 1] - SLD_real of backing (/1e-6 Angstrom**-2)</p>
+<p>slabs[0, 2] - SLD_imag of fronting (/1e-6 Angstrom**-2)
+slabs[N, 2] - iSLD_imag of layer N (/1e-6 Angstrom**-2)
+slabs[-1, 2] - iSLD_imag of backing (/1e-6 Angstrom**-2)</p>
+<p>slabs[0, 3] - ignored
+slabs[N, 3] - roughness between layer N-1/N
+slabs[-1, 3] - roughness between backing and layer N</p>
+</div></blockquote>
+<p><strong>scale</strong> : float</p>
+<blockquote>
+<div><p>scale factor. All model values are multiplied by this value before
+the background is added</p>
+</div></blockquote>
+<p><strong>bkg</strong> : float</p>
+<blockquote>
+<div><p>linear background added to all model values.</p>
+</div></blockquote>
+<p><strong>dq</strong> : float or np.ndarray, optional</p>
+<blockquote>
+<div><p>If <cite>dq == 0</cite> then no resolution smearing is employed.
+If dq is a float, then a constant dQ/Q resolution smearing is
+employed.  For 5% resolution smearing supply 5.
+If <cite>dq</cite> is the same shape as q, then the array contains the
+FWHM of a Gaussian approximated resolution kernel. Point by point
+resolution smearing is employed.  Use this option if dQ/Q varies
+across your dataset.
+If <cite>dq.ndim == q.ndim + 2</cite> and
+<cite>q.shape == dq[..., -3].shape</cite> then an individual resolution
+kernel is applied to each measurement point.  This resolution
+kernel is a probability distribution function (PDF). <cite>dqvals</cite> will
+have the shape (qvals.shape, M, 2).  There are <cite>M</cite> points in the
+kernel. <cite>dq[..., 0]</cite> holds the q values for the kernel,
+<cite>dq[..., 1]</cite> gives the corresponding probability.</p>
+</div></blockquote>
+<p><strong>quad_order: int, optional</strong></p>
+<blockquote>
+<div><p>the order of the Gaussian quadrature polynomial for doing the
+resolution smearing. default = 17. Don&#8217;t choose less than 13. If
+quad_order == &#8216;ultimate&#8217; then adaptive quadrature is used. Adaptive
+quadrature will always work, but takes a _long_ time (2 or 3 orders
+of magnitude longer). Fixed quadrature will always take a lot less
+time. BUT it won&#8217;t necessarily work across all samples. For
+example, 13 points may be fine for a thin layer, but will be
+atrocious at describing a multilayer with bragg peaks.</p>
+</div></blockquote>
+<p><strong>threads: int, optional</strong></p>
+<blockquote class="last">
+<div><p>Specifies the number of threads for parallel calculation. This
+option is only applicable if you are using the <code class="docutils literal"><span class="pre">_creflect</span></code>
+module. The option is ignored if using the pure python calculator,
+<code class="docutils literal"><span class="pre">_reflect</span></code>. If <cite>threads == 0</cite> then all available processors are
+used.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-refnx.reflect.structure">
+<span id="refnx-reflect-structure-module"></span><h2>refnx.reflect.structure module<a class="headerlink" href="#module-refnx.reflect.structure" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="refnx.reflect.structure.Component">
+<em class="property">class </em><code class="descclassname">refnx.reflect.structure.</code><code class="descname">Component</code><a class="reference internal" href="_modules/refnx/reflect/structure.html#Component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.Component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="refnx.reflect.structure.Component.lnprob">
+<code class="descname">lnprob</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Component.lnprob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.Component.lnprob" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.structure.Component.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.structure.Component.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.structure.Component.slabs">
+<code class="descname">slabs</code><a class="headerlink" href="#refnx.reflect.structure.Component.slabs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="refnx.reflect.structure.CompositeComponent">
+<em class="property">class </em><code class="descclassname">refnx.reflect.structure.</code><code class="descname">CompositeComponent</code><span class="sig-paren">(</span><em>components</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#CompositeComponent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.CompositeComponent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#refnx.reflect.structure.Component" title="refnx.reflect.structure.Component"><code class="xref py py-class docutils literal"><span class="pre">refnx.reflect.structure.Component</span></code></a></p>
+<p>A series of components to be considered as one.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="refnx.reflect.structure.SLD">
+<em class="property">class </em><code class="descclassname">refnx.reflect.structure.</code><code class="descname">SLD</code><span class="sig-paren">(</span><em>value</em>, <em>name=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#SLD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.SLD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<p>Object representing freely varying SLD of a material</p>
+<dl class="attribute">
+<dt id="refnx.reflect.structure.SLD.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.structure.SLD.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="refnx.reflect.structure.Slab">
+<em class="property">class </em><code class="descclassname">refnx.reflect.structure.</code><code class="descname">Slab</code><span class="sig-paren">(</span><em>thick</em>, <em>sld</em>, <em>rough</em>, <em>name=''</em>, <em>vfsolv=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Slab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.Slab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#refnx.reflect.structure.Component" title="refnx.reflect.structure.Component"><code class="xref py py-class docutils literal"><span class="pre">refnx.reflect.structure.Component</span></code></a></p>
+<p>A slab component has uniform SLD over its thickness.</p>
+<dl class="attribute">
+<dt id="refnx.reflect.structure.Slab.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.structure.Slab.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.structure.Slab.slabs">
+<code class="descname">slabs</code><a class="headerlink" href="#refnx.reflect.structure.Slab.slabs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="refnx.reflect.structure.Structure">
+<em class="property">class </em><code class="descclassname">refnx.reflect.structure.</code><code class="descname">Structure</code><span class="sig-paren">(</span><em>name=''</em>, <em>solvent='backing'</em>, <em>reverse_structure=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.Structure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.UserList" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">collections.UserList</span></code></a></p>
+<p>Represents the interfacial Structure of a reflectometry sample. Successive
+Components are added to the Structure to construct the interface.</p>
+<dl class="method">
+<dt id="refnx.reflect.structure.Structure.append">
+<code class="descname">append</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure.append"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.Structure.append" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.structure.Structure.components">
+<code class="descname">components</code><a class="headerlink" href="#refnx.reflect.structure.Structure.components" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="refnx.reflect.structure.Structure.lnprob">
+<code class="descname">lnprob</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure.lnprob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.Structure.lnprob" title="Permalink to this definition">¶</a></dt>
+<dd><p>log-probability for the interfacial structure. Note that if a given
+component is present more than once in a Structure then it&#8217;s log-prob
+will be counted twice.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>lnprob</strong> : float</p>
+<blockquote class="last">
+<div><p>log-prior for the Structure.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.structure.Structure.name">
+<code class="descname">name</code><a class="headerlink" href="#refnx.reflect.structure.Structure.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="refnx.reflect.structure.Structure.overall_sld">
+<em class="property">static </em><code class="descname">overall_sld</code><span class="sig-paren">(</span><em>slabs</em>, <em>solvent_slab</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure.overall_sld"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.Structure.overall_sld" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a volume fraction weighted average of the material SLD in a
+layer and the solvent in a layer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>slabs</strong> : np.ndarray</p>
+<blockquote>
+<div><p>Slab representation of the layers to be averaged.</p>
+</div></blockquote>
+<p><strong>solvent_slab: np.ndarray</strong></p>
+<blockquote>
+<div><p>Slab representation of the solvent layer</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>averaged_slabs</strong> : np.ndarray</p>
+<blockquote class="last">
+<div><p>the averaged slabs.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.structure.Structure.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.structure.Structure.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="refnx.reflect.structure.Structure.reflectivity">
+<code class="descname">reflectivity</code><span class="sig-paren">(</span><em>q</em>, <em>threads=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure.reflectivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.Structure.reflectivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate theoretical reflectivity of this structure</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>q</strong> : array-like</p>
+<blockquote>
+<div><p>Q values (Angstrom**-1) for evaluation</p>
+</div></blockquote>
+<p><strong>threads</strong> : int, optional</p>
+<blockquote class="last">
+<div><p>Specifies the number of threads for parallel calculation. This
+option is only applicable if you are using the <code class="docutils literal"><span class="pre">_creflect</span></code>
+module. The option is ignored if using the pure python calculator,
+<code class="docutils literal"><span class="pre">_reflect</span></code>. If <cite>threads == 0</cite> then all available processors are
+used.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.structure.Structure.reverse_structure">
+<code class="descname">reverse_structure</code><a class="headerlink" href="#refnx.reflect.structure.Structure.reverse_structure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.structure.Structure.slabs">
+<code class="descname">slabs</code><a class="headerlink" href="#refnx.reflect.structure.Structure.slabs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Slab representation of this structure.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>slabs</strong> : np.ndarray</p>
+<blockquote class="last">
+<div><p>Has shape (N, 5).
+slab[N, 0] - thickness of layer N
+slab[N, 1] - overall SLD.real of layer N (material AND solvent)
+slab[N, 2] - overall SLD.imag of layer N (material AND solvent)
+slab[N, 3] - roughness between layer N and N-1
+slab[N, 4] - volume fraction of solvent in layer N.</p>
+<blockquote>
+<div><p>(1 - solvent_volfrac = material_volfrac)</p>
+</div></blockquote>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>If <cite>Structure.reversed is True</cite> then the slab representation order is
+reversed. The slab order is reversed before the solvation calculation
+is done. I.e. if <cite>Structure.solvent == &#8216;backing&#8217;</cite> and
+<cite>Structure.reversed is True</cite> then the material that solvates the system
+is the component in <cite>Structure[0]</cite>, which corresponds to
+<cite>Structure.slab[-1]</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="refnx.reflect.structure.Structure.sld_profile">
+<code class="descname">sld_profile</code><span class="sig-paren">(</span><em>z=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure.sld_profile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.structure.Structure.sld_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates an SLD profile, as a function of distance through the
+interface.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>z</strong> : float</p>
+<blockquote>
+<div><p>Interfacial distance (Angstrom) measured from interface between the
+fronting medium and the first layer.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>sld</strong> : float</p>
+<blockquote class="last">
+<div><p>Scattering length density / 1e-6 $AA^-2$</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>This can be called in vectorised fashion.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-refnx.reflect">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-refnx.reflect" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="refnx.reflect.Component">
+<em class="property">class </em><code class="descclassname">refnx.reflect.</code><code class="descname">Component</code><a class="reference internal" href="_modules/refnx/reflect/structure.html#Component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="refnx.reflect.Component.lnprob">
+<code class="descname">lnprob</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Component.lnprob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Component.lnprob" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.Component.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.Component.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.Component.slabs">
+<code class="descname">slabs</code><a class="headerlink" href="#refnx.reflect.Component.slabs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="refnx.reflect.ReflectModel">
+<em class="property">class </em><code class="descclassname">refnx.reflect.</code><code class="descname">ReflectModel</code><span class="sig-paren">(</span><em>structure</em>, <em>scale=1</em>, <em>bkg=1e-07</em>, <em>name=''</em>, <em>dq=5.0</em>, <em>threads=0</em>, <em>quad_order=17</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/reflect_model.html#ReflectModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.ReflectModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<dl class="attribute">
+<dt id="refnx.reflect.ReflectModel.bkg">
+<code class="descname">bkg</code><a class="headerlink" href="#refnx.reflect.ReflectModel.bkg" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>bkg</strong> : Parameter</p>
+<blockquote class="last">
+<div><p>linear background added to all model values.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.ReflectModel.dq">
+<code class="descname">dq</code><a class="headerlink" href="#refnx.reflect.ReflectModel.dq" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>dq</strong> : Parameter</p>
+<blockquote class="last">
+<div><p>If <cite>dq.value == 0</cite> then no resolution smearing is employed.
+If <cite>dq.value &gt; 0</cite>, then a constant dQ/Q resolution smearing is
+employed.  For 5% resolution smearing supply 5. However, if
+<cite>x_err</cite> is supplied to the <cite>model</cite> method, then that overrides any
+setting reported here.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="refnx.reflect.ReflectModel.lnprob">
+<code class="descname">lnprob</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/reflect_model.html#ReflectModel.lnprob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.ReflectModel.lnprob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional log-probability terms for the reflectivity model. Do not
+include log-probability terms for model parameters, these are
+automatically calculated elsewhere.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>lnprob</strong> : float</p>
+<blockquote class="last">
+<div><p>log-probability of structure.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="refnx.reflect.ReflectModel.model">
+<code class="descname">model</code><span class="sig-paren">(</span><em>x</em>, <em>p=None</em>, <em>x_err=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/reflect_model.html#ReflectModel.model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.ReflectModel.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the reflectivity of this model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>x</strong> : float or np.ndarray</p>
+<blockquote>
+<div><p>q values for the calculation.</p>
+</div></blockquote>
+<p><strong>p</strong> : Parameters instance, optional</p>
+<blockquote>
+<div><p>parameters required to calculate the model</p>
+</div></blockquote>
+<p><strong>x_err</strong> : np.ndarray</p>
+<blockquote>
+<div><p>dq resolution smearing values for the dataset being considered.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>reflectivity</strong> : np.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.ReflectModel.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.ReflectModel.parameters" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>parameters</strong> : <cite>Parameters</cite></p>
+<blockquote class="last">
+<div><p>The Parameters associated with this model.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.ReflectModel.scale">
+<code class="descname">scale</code><a class="headerlink" href="#refnx.reflect.ReflectModel.scale" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>scale</strong> : Parameter</p>
+<blockquote class="last">
+<div><p>scale factor. All model values are multiplied by this value before
+the background is added.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.ReflectModel.structure">
+<code class="descname">structure</code><a class="headerlink" href="#refnx.reflect.ReflectModel.structure" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>structure</strong> : Structure</p>
+<blockquote class="last">
+<div><p>Structure objects describe the interface of a reflectometry sample.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="refnx.reflect.SLD">
+<em class="property">class </em><code class="descclassname">refnx.reflect.</code><code class="descname">SLD</code><span class="sig-paren">(</span><em>value</em>, <em>name=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#SLD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.SLD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<p>Object representing freely varying SLD of a material</p>
+<dl class="attribute">
+<dt id="refnx.reflect.SLD.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.SLD.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="refnx.reflect.Slab">
+<em class="property">class </em><code class="descclassname">refnx.reflect.</code><code class="descname">Slab</code><span class="sig-paren">(</span><em>thick</em>, <em>sld</em>, <em>rough</em>, <em>name=''</em>, <em>vfsolv=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Slab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Slab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#refnx.reflect.structure.Component" title="refnx.reflect.structure.Component"><code class="xref py py-class docutils literal"><span class="pre">refnx.reflect.structure.Component</span></code></a></p>
+<p>A slab component has uniform SLD over its thickness.</p>
+<dl class="attribute">
+<dt id="refnx.reflect.Slab.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.Slab.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.Slab.slabs">
+<code class="descname">slabs</code><a class="headerlink" href="#refnx.reflect.Slab.slabs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="refnx.reflect.Spline">
+<em class="property">class </em><code class="descclassname">refnx.reflect.</code><code class="descname">Spline</code><span class="sig-paren">(</span><em>extent</em>, <em>vs</em>, <em>dz</em>, <em>left</em>, <em>right</em>, <em>solvent</em>, <em>name=''</em>, <em>interpolator=&lt;class 'scipy.interpolate._cubic.PchipInterpolator'&gt;</em>, <em>zgrad=True</em>, <em>microslab_max_thickness=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/spline.html#Spline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Spline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#refnx.reflect.structure.Component" title="refnx.reflect.structure.Component"><code class="xref py py-class docutils literal"><span class="pre">refnx.reflect.structure.Component</span></code></a></p>
+<p>Freeform modelling of the real part of an SLD profile using spline
+interpolation.</p>
+<dl class="method">
+<dt id="refnx.reflect.Spline.lnprob">
+<code class="descname">lnprob</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/spline.html#Spline.lnprob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Spline.lnprob" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.Spline.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.Spline.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.Spline.slabs">
+<code class="descname">slabs</code><a class="headerlink" href="#refnx.reflect.Spline.slabs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="refnx.reflect.Structure">
+<em class="property">class </em><code class="descclassname">refnx.reflect.</code><code class="descname">Structure</code><span class="sig-paren">(</span><em>name=''</em>, <em>solvent='backing'</em>, <em>reverse_structure=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Structure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.UserList" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">collections.UserList</span></code></a></p>
+<p>Represents the interfacial Structure of a reflectometry sample. Successive
+Components are added to the Structure to construct the interface.</p>
+<dl class="method">
+<dt id="refnx.reflect.Structure.append">
+<code class="descname">append</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure.append"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Structure.append" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.Structure.components">
+<code class="descname">components</code><a class="headerlink" href="#refnx.reflect.Structure.components" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="refnx.reflect.Structure.lnprob">
+<code class="descname">lnprob</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure.lnprob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Structure.lnprob" title="Permalink to this definition">¶</a></dt>
+<dd><p>log-probability for the interfacial structure. Note that if a given
+component is present more than once in a Structure then it&#8217;s log-prob
+will be counted twice.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>lnprob</strong> : float</p>
+<blockquote class="last">
+<div><p>log-prior for the Structure.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.Structure.name">
+<code class="descname">name</code><a class="headerlink" href="#refnx.reflect.Structure.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="refnx.reflect.Structure.overall_sld">
+<em class="property">static </em><code class="descname">overall_sld</code><span class="sig-paren">(</span><em>slabs</em>, <em>solvent_slab</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure.overall_sld"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Structure.overall_sld" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a volume fraction weighted average of the material SLD in a
+layer and the solvent in a layer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>slabs</strong> : np.ndarray</p>
+<blockquote>
+<div><p>Slab representation of the layers to be averaged.</p>
+</div></blockquote>
+<p><strong>solvent_slab: np.ndarray</strong></p>
+<blockquote>
+<div><p>Slab representation of the solvent layer</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>averaged_slabs</strong> : np.ndarray</p>
+<blockquote class="last">
+<div><p>the averaged slabs.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.Structure.parameters">
+<code class="descname">parameters</code><a class="headerlink" href="#refnx.reflect.Structure.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="refnx.reflect.Structure.reflectivity">
+<code class="descname">reflectivity</code><span class="sig-paren">(</span><em>q</em>, <em>threads=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure.reflectivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Structure.reflectivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate theoretical reflectivity of this structure</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>q</strong> : array-like</p>
+<blockquote>
+<div><p>Q values (Angstrom**-1) for evaluation</p>
+</div></blockquote>
+<p><strong>threads</strong> : int, optional</p>
+<blockquote class="last">
+<div><p>Specifies the number of threads for parallel calculation. This
+option is only applicable if you are using the <code class="docutils literal"><span class="pre">_creflect</span></code>
+module. The option is ignored if using the pure python calculator,
+<code class="docutils literal"><span class="pre">_reflect</span></code>. If <cite>threads == 0</cite> then all available processors are
+used.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.Structure.reverse_structure">
+<code class="descname">reverse_structure</code><a class="headerlink" href="#refnx.reflect.Structure.reverse_structure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="refnx.reflect.Structure.slabs">
+<code class="descname">slabs</code><a class="headerlink" href="#refnx.reflect.Structure.slabs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Slab representation of this structure.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>slabs</strong> : np.ndarray</p>
+<blockquote class="last">
+<div><p>Has shape (N, 5).
+slab[N, 0] - thickness of layer N
+slab[N, 1] - overall SLD.real of layer N (material AND solvent)
+slab[N, 2] - overall SLD.imag of layer N (material AND solvent)
+slab[N, 3] - roughness between layer N and N-1
+slab[N, 4] - volume fraction of solvent in layer N.</p>
+<blockquote>
+<div><p>(1 - solvent_volfrac = material_volfrac)</p>
+</div></blockquote>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>If <cite>Structure.reversed is True</cite> then the slab representation order is
+reversed. The slab order is reversed before the solvation calculation
+is done. I.e. if <cite>Structure.solvent == &#8216;backing&#8217;</cite> and
+<cite>Structure.reversed is True</cite> then the material that solvates the system
+is the component in <cite>Structure[0]</cite>, which corresponds to
+<cite>Structure.slab[-1]</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="refnx.reflect.Structure.sld_profile">
+<code class="descname">sld_profile</code><span class="sig-paren">(</span><em>z=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/structure.html#Structure.sld_profile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.Structure.sld_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates an SLD profile, as a function of distance through the
+interface.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>z</strong> : float</p>
+<blockquote>
+<div><p>Interfacial distance (Angstrom) measured from interface between the
+fronting medium and the first layer.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>sld</strong> : float</p>
+<blockquote class="last">
+<div><p>Scattering length density / 1e-6 $AA^-2$</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>This can be called in vectorised fashion.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="refnx.reflect.reflectivity">
+<code class="descclassname">refnx.reflect.</code><code class="descname">reflectivity</code><span class="sig-paren">(</span><em>q</em>, <em>slabs</em>, <em>scale=1.0</em>, <em>bkg=0.0</em>, <em>dq=5.0</em>, <em>quad_order=17</em>, <em>threads=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/refnx/reflect/reflect_model.html#reflectivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#refnx.reflect.reflectivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abeles matrix formalism for calculating reflectivity from a stratified
+medium.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>q</strong> : np.ndarray</p>
+<blockquote>
+<div><p>The qvalues required for the calculation.
+<span class="math">\(Q=\frac{4Pi}{\lambda}\sin(\Omega)\)</span>.
+Units = Angstrom**-1</p>
+</div></blockquote>
+<p><strong>slabs</strong> : np.ndarray</p>
+<blockquote>
+<div><p>coefficients required for the calculation, has shape (2 + N, 4),
+where N is the number of layers</p>
+<p>slabs[0, 0] - ignored
+slabs[N, 0] - thickness of layer N
+slabs[N+1, 0] - ignored</p>
+<p>slabs[0, 1] - SLD_real of fronting (/1e-6 Angstrom**-2)
+slabs[N, 1] - SLD_real of layer N (/1e-6 Angstrom**-2)
+slabs[-1, 1] - SLD_real of backing (/1e-6 Angstrom**-2)</p>
+<p>slabs[0, 2] - SLD_imag of fronting (/1e-6 Angstrom**-2)
+slabs[N, 2] - iSLD_imag of layer N (/1e-6 Angstrom**-2)
+slabs[-1, 2] - iSLD_imag of backing (/1e-6 Angstrom**-2)</p>
+<p>slabs[0, 3] - ignored
+slabs[N, 3] - roughness between layer N-1/N
+slabs[-1, 3] - roughness between backing and layer N</p>
+</div></blockquote>
+<p><strong>scale</strong> : float</p>
+<blockquote>
+<div><p>scale factor. All model values are multiplied by this value before
+the background is added</p>
+</div></blockquote>
+<p><strong>bkg</strong> : float</p>
+<blockquote>
+<div><p>linear background added to all model values.</p>
+</div></blockquote>
+<p><strong>dq</strong> : float or np.ndarray, optional</p>
+<blockquote>
+<div><p>If <cite>dq == 0</cite> then no resolution smearing is employed.
+If dq is a float, then a constant dQ/Q resolution smearing is
+employed.  For 5% resolution smearing supply 5.
+If <cite>dq</cite> is the same shape as q, then the array contains the
+FWHM of a Gaussian approximated resolution kernel. Point by point
+resolution smearing is employed.  Use this option if dQ/Q varies
+across your dataset.
+If <cite>dq.ndim == q.ndim + 2</cite> and
+<cite>q.shape == dq[..., -3].shape</cite> then an individual resolution
+kernel is applied to each measurement point.  This resolution
+kernel is a probability distribution function (PDF). <cite>dqvals</cite> will
+have the shape (qvals.shape, M, 2).  There are <cite>M</cite> points in the
+kernel. <cite>dq[..., 0]</cite> holds the q values for the kernel,
+<cite>dq[..., 1]</cite> gives the corresponding probability.</p>
+</div></blockquote>
+<p><strong>quad_order: int, optional</strong></p>
+<blockquote>
+<div><p>the order of the Gaussian quadrature polynomial for doing the
+resolution smearing. default = 17. Don&#8217;t choose less than 13. If
+quad_order == &#8216;ultimate&#8217; then adaptive quadrature is used. Adaptive
+quadrature will always work, but takes a _long_ time (2 or 3 orders
+of magnitude longer). Fixed quadrature will always take a lot less
+time. BUT it won&#8217;t necessarily work across all samples. For
+example, 13 points may be fine for a thin layer, but will be
+atrocious at describing a multilayer with bragg peaks.</p>
+</div></blockquote>
+<p><strong>threads: int, optional</strong></p>
+<blockquote class="last">
+<div><p>Specifies the number of threads for parallel calculation. This
+option is only applicable if you are using the <code class="docutils literal"><span class="pre">_creflect</span></code>
+module. The option is ignored if using the pure python calculator,
+<code class="docutils literal"><span class="pre">_reflect</span></code>. If <cite>threads == 0</cite> then all available processors are
+used.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">refnx.reflect package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-refnx.reflect.reflect_model">refnx.reflect.reflect_model module</a></li>
+<li><a class="reference internal" href="#module-refnx.reflect.structure">refnx.reflect.structure module</a></li>
+<li><a class="reference internal" href="#module-refnx.reflect">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/refnx.reflect.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015-2017, Andrew Nelson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/refnx.reflect.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

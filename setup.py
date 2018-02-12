@@ -178,6 +178,20 @@ def setup_package():
                                 )
             ext_modules.append(_cevent)
 
+            _cfourier = Extension(
+                name='refnx.reflect._cfourier',
+                sources=['src/_cfourier.pyx',
+                         'src/fourier.cpp'],
+                include_dirs=[numpy_include],
+                language='c',
+                extra_compile_args=[],
+                extra_link_args=['-lpthread']
+                # libraries=
+                # extra_compile_args = "...".split(),
+            )
+            ext_modules.append(_creflect)
+            ext_modules.append(_cfourier)
+
             info['cmdclass'] = {'build_ext': build_ext}
             info['ext_modules'] = ext_modules
             info['zip_safe'] = False
