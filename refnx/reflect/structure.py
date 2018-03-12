@@ -4,7 +4,7 @@ from __future__ import division
 from six.moves import UserList
 
 import numpy as np
-from scipy.special import erf
+from scipy.stats import norm
 from scipy.interpolate import interp1d
 
 try:
@@ -25,12 +25,11 @@ class Structure(UserList):
     ----------
     name : str
         Name of this structure
-    solvent : str
-        Specifies whether the 'backing' or 'fronting' semi-infinite medium
-        is used to solvate components. You would typically use 'backing'
-        for neutron reflectometry, with solvation by the material in
-        Structure[-1]. X-ray reflectometry would typically be solvated by
-        the 'fronting' material in Structure[0].
+    solvent : SLD
+        Specifies the scattering length density used for solvation. If no
+        solvent is specified then the SLD of the solvent is assumed to be
+        the SLD of `Structure[-1].slabs[-1]` (after any possible slab order
+        reveral).
     reverse_structure : bool
         If `Structure.reverse_structure` is `True` then the slab
         representation produced by `Structure.slabs` is reversed. The sld
@@ -45,11 +44,11 @@ class Structure(UserList):
     Notes
     -----
     If `Structure.reverse_structure is True` then the slab representation
-    order is reversed. The slab order is reversed before the solvation
-    calculation is done. I.e. if `Structure.solvent == 'backing'` and
-    `Structure.reverse_structure is True` then the material that solvates
-    the system is the component in `Structure[0]`, which corresponds to
-    `Structure.slab[-1]`.
+    order is reversed.
+    If no solvent is specified then the volume fraction of solvent in each of
+    the Components is *assumed* to be the SLD of `Structure[-1].slabs[-1]`.
+    after any possible slab order reversal. This slab corresponds to the
+    SLD of the semi-infinite backing medium.
     The profile contraction specified by the `contract` keyword can improve
     calculation time for Structures created with microslicing (such as
     analytical profiles). If you use this option it is recommended to check
@@ -57,17 +56,15 @@ class Structure(UserList):
     comparable.
 
     """
-    def __init__(self, name='', solvent='backing', reverse_structure=False,
+    def __init__(self, name='', solvent=None, reverse_structure=False,
                  contract=0):
         super(Structure, self).__init__()
         self._name = name
-        if solvent not in ['backing', 'fronting']:
-            raise ValueError("solvent must either be the fronting or backing"
-                             " medium")
 
-        #: **str** specifies whether `backing` or `fronting` semi-infinite
-        #: medium is used to solvate components.
         self.solvent = solvent
+        if solvent is not None:
+            self.solvent = SLD(solvent)
+
         self._reverse_structure = bool(reverse_structure)
         #: **float** if contract > 0 then an attempt to contract/shrink the
         #: slab representation is made. Use larger values for coarser profiles
@@ -152,6 +149,9 @@ class Structure(UserList):
         i = 0
         for component in self.components:
             additional_slabs = component.slabs
+            if additional_slabs is None:
+                continue
+
             new_slabs = len(additional_slabs)
 
             if new_slabs > len(slabs) - i:
@@ -171,19 +171,12 @@ class Structure(UserList):
             slabs[1:, 3] = roughnesses[::-1]
             slabs[0, 3] = 0.
         if len(self) > 2:
-            if self.solvent == 'top/bottom':
-                top_solvent_slab = slabs[0]
-                bottom_solvent_slab = slabs[-1]
-                slabs[1] = self.overall_sld(slabs[1], top_solvent_slab)
-                slabs[-2] = self.overall_sld(slabs[-2], bottom_solvent_slab)
-            else:
-                if self.solvent == 'backing':
-                    solvent_slab = slabs[-1]
-                if self.solvent == 'fronting':
-                    solvent_slab = slabs[0]
+            # overall SLD is a weighted average
+            solvent = self.solvent
+            if self.solvent is None:
+                solvent = complex(slabs[-1, 1], slabs[-1, 2])
 
-                # overall SLD is a weighted average
-                slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent_slab)
+            slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent)
 
         if self.contract > 0:
             return _contract_by_area(slabs, self.contract)
@@ -191,7 +184,7 @@ class Structure(UserList):
             return slabs
 
     @staticmethod
-    def overall_sld(slabs, solvent_slab):
+    def overall_sld(slabs, solvent):
         """
         Performs a volume fraction weighted average of the material SLD in a
         layer and the solvent in a layer.
@@ -200,18 +193,22 @@ class Structure(UserList):
         ----------
         slabs : np.ndarray
             Slab representation of the layers to be averaged.
-        solvent_slab: np.ndarray
-            Slab representation of the solvent layer
+        solvent : complex or reflect.SLD
+            SLD of solvating material.
 
         Returns
         -------
         averaged_slabs : np.ndarray
             the averaged slabs.
         """
+        solv = solvent
+        if isinstance(solvent, SLD):
+            solv = complex(solvent.real.value, solvent.imag.value)
+
         slabs[..., 1] = slabs[..., 1] * (1 - slabs[..., 4])
         slabs[..., 2] = slabs[..., 2] * (1 - slabs[..., 4])
-        slabs[..., 1] += solvent_slab[..., 1] * slabs[..., 4]
-        slabs[..., 2] += solvent_slab[..., 2] * slabs[..., 4]
+        slabs[..., 1] += solv.real * slabs[..., 4]
+        slabs[..., 2] += solv.imag * slabs[..., 4]
         return slabs
 
     def reflectivity(self, q, threads=0):
@@ -245,7 +242,7 @@ class Structure(UserList):
         Returns
         -------
         sld : float
-            Scattering length density / 1e-6 $\AA^-2$
+            Scattering length density / 1e-6 Angstrom**-2
 
         Notes
         -----
@@ -259,61 +256,7 @@ class Structure(UserList):
             raise ValueError("Structure requires fronting and backing"
                              " Slabs in order to calculate.")
 
-        nlayers = np.size(slabs, 0) - 2
-
-        if z is None:
-            if not nlayers:
-                zstart = -5 - 4 * np.fabs(slabs[-1, 3])
-                zend = 5 + 4 * np.fabs(slabs[-1, 3])
-            else:
-                zstart = -5 - 4 * np.fabs(slabs[1, 3])
-                sum_thick = np.sum(np.fabs(slabs[1:-1, 0]))
-                zend = 5 + sum_thick + 4 * np.fabs(slabs[-1, 3])
-
-            z = np.linspace(zstart, zend, num=500)
-
-        def sld_z(zed):
-            sld = np.zeros_like(zed)
-
-            dist = 0
-            thick = 0
-            for ii in range(nlayers + 1):
-                if ii == 0:
-                    if nlayers:
-                        deltarho = -slabs[0, 1] + slabs[1, 1]
-                        thick = 0
-                        sigma = np.fabs(slabs[1, 3])
-                    else:
-                        sigma = np.fabs(slabs[-1, 3])
-                        deltarho = -slabs[0, 1] + slabs[-1, 1]
-                elif ii == nlayers:
-                    sld1 = slabs[ii, 1]
-                    deltarho = -sld1 + slabs[-1, 1]
-                    thick = np.fabs(slabs[ii, 0])
-                    sigma = np.fabs(slabs[-1, 3])
-                else:
-                    sld1 = slabs[ii, 1]
-                    sld2 = slabs[ii + 1, 1]
-                    deltarho = -sld1 + sld2
-                    thick = np.fabs(slabs[ii, 0])
-                    sigma = np.fabs(slabs[ii + 1, 3])
-
-                dist += thick
-
-                # if sigma=0 then the computer goes haywire (division by zero),
-                # so say it's vanishingly small
-                if sigma == 0:
-                    sigma += 1e-3
-
-                # summ += deltarho * (norm.cdf((zed - dist)/sigma))
-                sld += (deltarho *
-                        (0.5 +
-                         0.5 *
-                         erf((zed - dist) / (sigma * np.sqrt(2.)))))
-
-            return sld
-
-        return z, sld_z(z) + slabs[0, 1]
+        return sld_profile(slabs, z)
 
     def __ior__(self, other):
         # self |= other
@@ -349,6 +292,8 @@ class Structure(UserList):
         """
         p = Parameters(name='Structure - {0}'.format(self.name))
         p.extend([component.parameters for component in self.components])
+        if self.solvent is not None:
+            p.append(self.solvent.parameters)
         return p
 
     def lnprob(self):
@@ -453,6 +398,7 @@ class Component(object):
         """
         The slab representation of this component
 
+        If a Component returns None, then it doesn't have any slabs
         """
 
         raise NotImplementedError("A component should override the slabs "
@@ -597,6 +543,62 @@ def _profile_slicer(z, sld_profile, slice_size=None):
     structure.extend(slabs)
 
     return structure
+
+
+def sld_profile(slabs, z=None):
+    """
+    Calculates an SLD profile, as a function of distance through the
+    interface.
+
+    Parameters
+    ----------
+    z : float
+        Interfacial distance (Angstrom) measured from interface between the
+        fronting medium and the first layer.
+
+    Returns
+    -------
+    sld : float
+        Scattering length density / 1e-6 Angstrom**-2
+
+    Notes
+    -----
+    This can be called in vectorised fashion.
+    """
+    nlayers = np.size(slabs, 0) - 2
+
+    # work on a copy of the input array
+    layers = np.copy(slabs)
+    layers[:, 0] = np.fabs(slabs[:, 0])
+    layers[:, 3] = np.fabs(slabs[:, 3])
+    # bounding layers should have zero thickness
+    layers[0, 0] = layers[-1, 0] = 0
+
+    # distance of each interface from the fronting interface
+    dist = np.cumsum(layers[:-1, 0])
+
+    # workout how much space the SLD profile should encompass
+    # (if z array not provided)
+    if z is None:
+        zstart = -5 - 4 * np.fabs(slabs[1, 3])
+        zend = 5 + dist[-1] + 4 * layers[-1, 3]
+        zed = np.linspace(zstart, zend, num=500)
+    else:
+        zed = np.asfarray(z)
+
+    # the output array
+    sld = np.ones_like(zed, dtype=float) * layers[0, 1]
+
+    # work out the step in SLD at an interface
+    delta_rho = layers[1:, 1] - layers[:-1, 1]
+    # the roughness of each step
+    sigma = np.clip(layers[1:, 3], 1e-3, None)
+
+    # accumulate the SLD of each step.
+    for i in range(nlayers + 1):
+        sld += delta_rho[i] * norm.cdf(zed, scale=sigma[i], loc=dist[i])
+
+    return zed, sld
 
 
 # The following slab contraction code was translated from C code in
