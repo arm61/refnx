@@ -173,10 +173,17 @@ class Structure(UserList):
         if len(self) > 2:
             # overall SLD is a weighted average
             solvent = self.solvent
-            if self.solvent is None:
-                solvent = complex(slabs[-1, 1], slabs[-1, 2])
+            if solvent == 'top/bottom':
+                top_solvent_slab = complex(slabs[0, 1], slabs[0, 2])
+                bottom_solvent_slab = complex(slabs[-1, 1], slabs[-1, 2])
+                slabs[1] = self.overall_sld(slabs[1], top_solvent_slab)
+                slabs[-2] = self.overall_sld(slabs[-2], bottom_solvent_slab)
+            else:
+                if self.solvent is None:
+                    solvent = complex(slabs[-1, 1], slabs[-1, 2])
 
-            slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent)
+                slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent)
+
 
         if self.contract > 0:
             return _contract_by_area(slabs, self.contract)
@@ -292,7 +299,7 @@ class Structure(UserList):
         """
         p = Parameters(name='Structure - {0}'.format(self.name))
         p.extend([component.parameters for component in self.components])
-        if self.solvent is not None:
+        if self.solvent is not None and not isinstance(self.solvent, str):
             p.append(self.solvent.parameters)
         return p
 
@@ -336,7 +343,7 @@ class SLD(object):
     >>> sio2_layer = SLD(20, 3)
 
     """
-    def __init__(self, value, name=''):
+    def __init__(self, value, name='', solvent=0.0):
         self.name = name
         if isinstance(value, complex):
             self.real = Parameter(value.real, name='%s - sld' % name)
