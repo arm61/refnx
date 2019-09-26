@@ -546,7 +546,7 @@ class CurveFitter(object):
         logl = np.sort(logl_array)[::-1]
         logevidence = logl[0] + np.log(1 + np.sum(logl[1:] / logl[0]))
         return logevidence * 1 / (
-            n * volume ** len(self.objective.varying_parameters())
+            n * volume ** len(self.objective.varying_parameters()))
 
     def fit(self, method='L-BFGS-B', target='nll', **kws):
         """
