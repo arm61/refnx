@@ -14,7 +14,7 @@ environment:
     - TARGET_ARCH: x64
       CONDA_NPY: 116
       PYTHON_VERSION: 3.7
-      CONDA_INSTALL_LOCN: C:\\Miniconda37-x64
+      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
 
 # We always use a 64-bit machine, but can build x86 distributions
 # with the TARGET_ARCH variable (which is used by CMD_IN_ENV).
@@ -60,7 +60,7 @@ install:
     - activate test
     - conda install --yes --quiet numpy scipy h5py cython traitlets ipywidgets xlrd pandas pytest pyqt
     - pip install corner uncertainties matplotlib IPython pytest-qt periodictable pyqt5
-    - pip install git+https://github.com/pymc-devs/pymc3
+    # - pip install git+https://github.com/pymc-devs/pymc3
 
 build_script:
     # Build the compiled extension
@@ -69,7 +69,7 @@ build_script:
 test_script:
     # Run the project tests
     - cmd: set "REQUIRE_C=1"
-    - pytest
+    - cmd: python setup.py test
 
 after_test:
     # If tests are successful, create binary packages for the project.

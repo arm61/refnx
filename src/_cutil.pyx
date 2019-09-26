@@ -1,8 +1,5 @@
 # cython: language_level=3
 
-from __future__ import division, absolute_import
-import collections
-
 
 def c_flatten(seq):
     """
@@ -19,10 +16,12 @@ def c_flatten(seq):
         yields flattened sequences from seq
     """
     for el in seq:
-        if (isinstance(el, collections.Iterable) and
-                not isinstance(el, (str, bytes))):
+        try:
+            iter(el)
+            if isinstance(el, (str, bytes)):
+                raise TypeError
             yield from c_flatten(el)
-        else:
+        except TypeError:
             yield el
 
 

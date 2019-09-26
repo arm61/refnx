@@ -1,3 +1,25 @@
+"""
+refnx is distributed under the following license:
+
+Copyright (c) 2015 A. R. J. Nelson, ANSTO
+
+Permission to use and redistribute the source code or binary forms of this
+software and its documentation, with or without modification is hereby
+granted provided that the above notice of copyright, these terms of use,
+and the disclaimer of warranty below appear in the source code and
+documentation, and that none of the names of above institutions or
+authors appear in advertising or endorsement of works derived from this
+software without specific prior written permission from all parties.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THIS SOFTWARE.
+
+"""
 # -*- coding: utf-8 -*-
 
 from collections import UserList
@@ -10,9 +32,15 @@ from scipy.interpolate import interp1d
 try:
     from refnx.reflect import _creflect as refcalc
 except ImportError:
-    print('WARNING, Using slow reflectivity calculation')
     from refnx.reflect import _reflect as refcalc
+
+from refnx._lib import flatten
 from refnx.analysis import Parameters, Parameter, possibly_create_parameter
+from refnx.reflect.interface import Interface, Erf, Step
+from refnx.reflect.reflect_model import get_reflect_backend
+
+# contracting the SLD profile can greatly speed a reflectivity calculation up.
+contract_by_area = refcalc._contract_by_area
 
 
 class Structure(UserList):
@@ -52,16 +80,25 @@ class Structure(UserList):
     `Structure[-1].slabs()[-1]` after any possible slab order reversal. This
     slab corresponds to the scattering length density of the semi-infinite
     backing medium.
-    The profile contraction specified by the `contract` keyword can improve
-    calculation time for Structures created with microslicing (such as
-    analytical profiles). If you use this option it is recommended to check
-    the reflectivity signal with and without contraction to ensure they are
-    comparable.
+    Normally the reflectivity will be calculated using the Nevot-Croce
+    approximation for Gaussian roughness between different layers. However, if
+    individual components have non-Gaussian roughness (e.g. Tanh), then the
+    overall reflectivity and SLD profile are calculated by micro-slicing.
+    Micro-slicing involves calculating the specific SLD profile, dividing it
+    up into small-slabs, and calculating the reflectivity from those. This
+    normally takes much longer than the Nevot-Croce approximation. To speed
+    the calculation up the `Structure.contract` property can be used.
+    Contracting too far may mask the subtle differences between different
+    roughness types.
+    The profile contraction specified by this property can greatly improve
+    calculation time for Structures created with micro-slicing. If you use
+    this option it is recommended to check the reflectivity signal with and
+    without contraction to ensure they are comparable.
 
     Example
     -------
 
-    >>> from refnx.reflect import SLD
+    >>> from refnx.reflect import SLD, Linear, Tanh, Interface
     >>> # make the materials
     >>> air = SLD(0, 0)
     >>> # overall SLD of polymer is (1.0 + 0.001j) x 10**-6 A**-2
@@ -71,6 +108,26 @@ class Structure(UserList):
     >>> # The polymer slab has a thickness of 200 A and a air/polymer roughness
     >>> # of 4 A.
     >>> s = air(0, 0) | polymer(200, 4) | si(0, 3)
+
+    Use Linear roughness between air and polymer (rather than default Gaussian
+    roughness). Use Tanh roughness between si and polymer.
+    If non-default roughness is used then the reflectivity is calculated via
+    micro-slicing - set the `contract` property to speed the calculation up.
+
+    >>> s[1].interfaces = Linear()
+    >>> s[2].interfaces = Tanh()
+    >>> s.contract = 0.5
+
+    Create a user defined interfacial roughness based on the cumulative
+    distribution function (CDF) of a Cauchy.
+
+    >>> from scipy.stats import cauchy
+    >>> class Cauchy(Interface):
+    ...     def __call__(self, x, loc=0, scale=1):
+    ...         return cauchy.cdf(x, loc=loc, scale=scale)
+    >>>
+    >>> c = Cauchy()
+    >>> s[1].interfaces = c
 
     """
     def __init__(self, components=(), name='', solvent=None,
@@ -216,12 +273,24 @@ class Structure(UserList):
             raise ValueError("The first and last Components in a Structure"
                              " need to be Slabs")
 
-        sl = [c.slabs(structure=self) for c in self.components]
-        try:
-            slabs = np.concatenate(sl)
-        except ValueError:
-            # some of slabs may be None. np can't concatenate arr and None
-            slabs = np.concatenate([s for s in sl if s is not None])
+        # Each layer can be given a different type of roughness profile
+        # that defines transition between successive layers.
+        # The default interface is specified by None (= Gaussian roughness)
+        interfaces = flatten(self.interfaces)
+        if all([i is None for i in interfaces]):
+            # if all the interfaces are Gaussian, then simply concatenate
+            # the default slabs property of each component.
+            sl = [c.slabs(structure=self) for c in self.components]
+
+            try:
+                slabs = np.concatenate(sl)
+            except ValueError:
+                # some of slabs may be None. np can't concatenate arr and None
+                slabs = np.concatenate([s for s in sl if s is not None])
+        else:
+            # there is a non-default interfacial roughness, create a microslab
+            # representation
+            slabs = self._micro_slabs()
 
         # if the slab representation needs to be reversed.
         if self.reverse_structure:
@@ -235,9 +304,102 @@ class Structure(UserList):
             slabs[1:-1] = self.overall_sld(slabs[1:-1], self.solvent)
 
         if self.contract > 0:
-            return _contract_by_area(slabs, self.contract)
+            return contract_by_area(slabs, self.contract)
         else:
             return slabs
+
+    def _micro_slabs(self, slice_size=0.5):
+        """
+        Creates a microslab representation of the Structure.
+
+        Parameters
+        ----------
+        slice_size : float
+            Thickness of each slab in the micro-slab representation
+
+        Returns
+        -------
+        micro_slabs : np.ndarray
+            The micro-slab representation of the model. See the
+            `Structure.slabs` method for a description of the array.
+        """
+        # solvate the slabs from each component
+        sl = [c.slabs(structure=self) for c in self.components]
+        total_slabs = np.concatenate(sl)
+        total_slabs[1:-1] = self.overall_sld(total_slabs[1:-1],
+                                             self.solvent)
+
+        total_slabs[:, 0] = np.fabs(total_slabs[:, 0])
+        total_slabs[:, 3] = np.fabs(total_slabs[:, 3])
+
+        # interfaces between all the slabs
+        _interfaces = self.interfaces
+        erf_interface = Erf()
+        i = 0
+        # the default Interface is None.
+        # The Component.interfaces property may not have the same length as the
+        # Component.slabs. Expand it so it matches the number of slabs,
+        # otherwise the calculation of microslabs fails.
+        for _interface, _slabs in zip(_interfaces, sl):
+            if _interface is None or isinstance(_interface, Interface):
+                f = _interface or erf_interface
+                _interfaces[i] = [f] * len(_slabs)
+            i += 1
+
+        _interfaces = list(flatten(_interfaces))
+        _interfaces = [erf_interface if i is None else i for i in _interfaces]
+
+        # distance of each interface from the fronting interface
+        dist = np.cumsum(total_slabs[:-1, 0])
+
+        # workout how much space the SLD profile should encompass
+        zstart = -5. - 8 * total_slabs[1, 3]
+        zend = 5. + dist[-1] + 8 * total_slabs[-1, 3]
+        nsteps = int((zend - zstart) / slice_size + 1)
+        zed = np.linspace(zstart, zend, num=nsteps)
+
+        # the output arrays
+        sld = np.ones_like(zed, dtype=float) * total_slabs[0, 1]
+        isld = np.ones_like(zed, dtype=float) * total_slabs[0, 2]
+
+        # work out the step in SLD at an interface
+        delta_rho = total_slabs[1:, 1] - total_slabs[:-1, 1]
+        delta_irho = total_slabs[1:, 2] - total_slabs[:-1, 2]
+
+        # the RMS roughness of each step
+        sigma = total_slabs[1:, 3]
+        step = Step()
+
+        # accumulate the SLD of each step.
+        for i in range(len(total_slabs) - 1):
+            f = _interfaces[i + 1]
+            if sigma[i] == 0:
+                f = step
+
+            p = f(zed, scale=sigma[i], loc=dist[i])
+            sld += delta_rho[i] * p
+            isld += delta_irho[i] * p
+
+        sld[0] = total_slabs[0, 1]
+        isld[0] = total_slabs[0, 2]
+        sld[-1] = total_slabs[-1, 1]
+        isld[-1] = total_slabs[-1, 2]
+
+        micro_slabs = np.zeros((len(zed), 5), float)
+        micro_slabs[:, 0] = zed[1] - zed[0]
+        micro_slabs[:, 1] = sld
+        micro_slabs[:, 2] = isld
+
+        return micro_slabs
+
+    @property
+    def interfaces(self):
+        """
+        A nested list containing the interfacial roughness types for each of
+        the `Component`s.
+        `len(Structure.interfaces) == len(Structure.components)`
+        """
+        return [c.interfaces for c in self.components]
 
     @staticmethod
     def overall_sld(slabs, solvent):
@@ -280,8 +442,21 @@ class Structure(UserList):
             module. The option is ignored if using the pure python calculator,
             ``_reflect``. If `threads == 0` then all available processors are
             used.
+
+        Notes
+        -----
+        Normally the reflectivity will be calculated using the Nevot-Croce
+        approximation for Gaussian roughness between different layers. However,
+        if individual components have non-Gaussian roughness (e.g. Tanh), then
+        the overall reflectivity and SLD profile are calculated by
+        micro-slicing. Micro-slicing involves calculating the specific SLD
+        profile, dividing it up into small-slabs, and calculating the
+        reflectivity from those. This normally takes much longer than the
+        Nevot-Croce approximation. To speed the calculation up the
+        `Structure.contract` property can be used.
         """
-        return refcalc.abeles(q, self.slabs()[..., :4], threads=threads)
+        abeles = get_reflect_backend()
+        return abeles(q, self.slabs()[..., :4], threads=threads)
 
     def sld_profile(self, z=None):
         """
@@ -429,7 +604,7 @@ class Structure(UserList):
         fig, ax : :class:`matplotlib.Figure`, :class:`matplotlib.Axes`
           `matplotlib` figure and axes objects.
 
-      """
+        """
         import matplotlib.pyplot as plt
 
         params = self.parameters
@@ -573,9 +748,20 @@ class Component(object):
     """
     A base class for describing the structure of a subset of an interface.
 
+    Parameters
+    ----------
+    name : str, optional
+        The name associated with the Component
+
+    Notes
+    -----
+    By setting the `Component.interfaces` property one can control the
+    type of interfacial roughness between all the layers of an interfacial
+    profile.
     """
-    def __init__(self):
-        self.name = ''
+    def __init__(self, name=''):
+        self.name = name
+        self._interfaces = None
 
     def __or__(self, other):
         """
@@ -610,10 +796,45 @@ class Component(object):
     def parameters(self):
         """
         :class:`refnx.analysis.Parameters` associated with this component
-
         """
         raise NotImplementedError("A component should override the parameters "
                                   "property")
+
+    @property
+    def interfaces(self):
+        """
+        The interfacial roughness type between each layer in `Component.slabs`.
+        Should be one of {None, :class:`Interface`, or sequence of
+        :class:`Interface`}.
+        """
+        return self._interfaces
+
+    @interfaces.setter
+    def interfaces(self, interfaces):
+        # Sentinel for default roughness.
+        if interfaces is None:
+            self._interfaces = None
+            return
+
+        if isinstance(interfaces, Interface):
+            self._interfaces = interfaces
+            return
+
+        # this will raise TypeError is interfaces is not iterable
+        _interfaces = [i for i in interfaces if isinstance(i, Interface)]
+
+        if len(_interfaces) == 1:
+            self._interfaces = _interfaces[0]
+            return
+
+        n_slabs = len(self.slabs())
+        if len(_interfaces) == n_slabs:
+            self._interfaces = _interfaces
+        else:
+            raise ValueError("Interface property must be set with one of:"
+                             " {None, Interface, sequence of Interface. If a"
+                             " sequence is provided it must have the same"
+                             " length as `Component.slabs`.")
 
     def slabs(self, structure=None):
         """
@@ -677,11 +898,14 @@ class Slab(Component):
         Name of this slab
     vfsolv : refnx.analysis.Parameter or float
         Volume fraction of solvent [0, 1]
-
+    interface : {:class:`Interface`, None}, optional
+        The type of interfacial roughness associated with the Slab.
+        If `None`, then the default interfacial roughness is an Error
+        function (also known as Gaussian roughness).
     """
 
-    def __init__(self, thick, sld, rough, name='', vfsolv=0):
-        super(Slab, self).__init__()
+    def __init__(self, thick, sld, rough, name='', vfsolv=0, interface=None):
+        super(Slab, self).__init__(name=name)
         self.thick = possibly_create_parameter(thick,
                                                name='%s - thick' % name)
         if isinstance(sld, SLD):
@@ -693,13 +917,13 @@ class Slab(Component):
         self.vfsolv = (
             possibly_create_parameter(vfsolv,
                                       name='%s - volfrac solvent' % name))
-        self.name = name
 
         p = Parameters(name=self.name)
         p.extend([self.thick, self.sld.real, self.sld.imag,
                   self.rough, self.vfsolv])
 
         self._parameters = p
+        self.interfaces = interface
 
     def __repr__(self):
         return ("Slab({thick!r}, {sld!r}, {rough!r},"
@@ -727,14 +951,14 @@ class Slab(Component):
         """
         Slab representation of this component. See :class:`Component.slabs`
         """
-        return np.atleast_2d(np.array([self.thick.value,
-                                       self.sld.real.value,
-                                       self.sld.imag.value,
-                                       self.rough.value,
-                                       self.vfsolv.value]))
+        return np.array([[self.thick.value,
+                          self.sld.real.value,
+                          self.sld.imag.value,
+                          self.rough.value,
+                          self.vfsolv.value]])
 
 
-class Stack(UserList, Component):
+class Stack(Component, UserList):
     r"""
     A series of Components to be considered as one. When part of a Structure
     the Stack can represent a multilayer by setting the `repeats` attribute.
@@ -764,9 +988,9 @@ class Stack(UserList, Component):
     Structure.
     """
     def __init__(self, components=(), name='', repeats=1):
-        super(Stack, self).__init__()
+        Component.__init__(self, name=name)
+        UserList.__init__(self)  # explicit calls without super
 
-        self.name = name
         self.repeats = possibly_create_parameter(repeats, 'repeats')
         self.repeats.bounds.lb = 1
 
@@ -848,6 +1072,23 @@ class Stack(UserList, Component):
             delattr(self, 'solvent')
 
         return slabs
+
+    def _interfaces_get(self):
+        repeats = round(abs(self.repeats.value))
+        interfaces = list(flatten([i.interfaces for i in self.data]))
+
+        if repeats > 1:
+            interfaces = interfaces * repeats
+
+        return interfaces
+
+    def _interfaces_set(self, interfaces):
+        raise RuntimeError("Cannot set interfaces property for a Stack"
+                           " Component. Please set the interfaces property"
+                           " for the constituent Components.")
+
+    # override the interfaces property for this subclass
+    interfaces = property(_interfaces_get, _interfaces_set)
 
     @property
     def components(self):
@@ -1003,112 +1244,17 @@ def sld_profile(slabs, z=None):
 
     # work out the step in SLD at an interface
     delta_rho = layers[1:, 1] - layers[:-1, 1]
-    # the roughness of each step
-    sigma = np.clip(layers[1:, 3], 1e-3, None)
+
+    # use erf for roughness function, but step if the roughness is zero
+    step_f = Step()
+    erf_f = Erf()
+    sigma = layers[1:, 3]
 
     # accumulate the SLD of each step.
     for i in range(nlayers + 1):
-        sld += delta_rho[i] * norm.cdf(zed, scale=sigma[i], loc=dist[i])
+        f = erf_f
+        if sigma[i] == 0:
+            f = step_f
+        sld += delta_rho[i] * f(zed, scale=sigma[i], loc=dist[i])
 
     return zed, sld
-
-
-# The following slab contraction code was translated from C code in
-# the refl1d project.
-def _contract_by_area(slabs, dA=0.5):
-    """
-    Shrinks a slab representation to a reduced number of layers. This can
-    reduced calculation times.
-
-    Parameters
-    ----------
-    slabs : array
-        Has shape (N, 5).
-
-            slab[N, 0] - thickness of layer N
-            slab[N, 1] - overall SLD.real of layer N (material AND solvent)
-            slab[N, 2] - overall SLD.imag of layer N (material AND solvent)
-            slab[N, 3] - roughness between layer N and N-1
-            slab[N, 4] - volume fraction of solvent in layer N.
-                         (1 - solvent_volfrac = material_volfrac)
-
-    dA : float
-        Larger values coarsen the profile to a greater extent, and vice versa.
-
-    Returns
-    -------
-    contract_slab : array
-        Contracted slab representation.
-
-    Notes
-    -----
-    The reflectivity profiles from both contracted and un-contracted profiles
-    should be compared to check for accuracy.
-    """
-
-    # In refl1d the first slab is the substrate, the order is reversed here.
-    # In the following code the slabs are traversed from the backing towards
-    # the fronting.
-    newslabs = np.copy(slabs)[::-1]
-    d = newslabs[:, 0]
-    rho = newslabs[:, 1]
-    irho = newslabs[:, 2]
-    sigma = newslabs[:, 3]
-    vfsolv = newslabs[:, 4]
-
-    n = np.size(d, 0)
-    i = newi = 1  # Skip the substrate
-
-    while i < n:
-        # Get ready for the next layer
-        # Accumulation of the first row happens in the inner loop
-        dz = rhoarea = irhoarea = vfsolvarea = 0.
-        rholo = rhohi = rho[i]
-        irholo = irhohi = irho[i]
-
-        # Accumulate slices into layer
-        while True:
-            # Accumulate next slice
-            dz += d[i]
-            rhoarea += d[i] * rho[i]
-            irhoarea += d[i] * irho[i]
-            vfsolvarea += d[i] * vfsolv[i]
-
-            i += 1
-            # If no more slices or sigma != 0, break immediately
-            if i == n or sigma[i - 1] != 0.:
-                break
-
-            # If next slice won't fit, break
-            if rho[i] < rholo:
-                rholo = rho[i]
-            if rho[i] > rhohi:
-                rhohi = rho[i]
-            if (rhohi - rholo) * (dz + d[i]) > dA:
-                break
-
-            if irho[i] < irholo:
-                irholo = irho[i]
-            if irho[i] > irhohi:
-                irhohi = irho[i]
-            if (irhohi - irholo) * (dz + d[i]) > dA:
-                break
-
-        # Save the layer
-        d[newi] = dz
-        if i == n:
-            # printf("contract: adding final sld at %d\n",newi)
-            # Last layer uses surface values
-            rho[newi] = rho[n - 1]
-            irho[newi] = irho[n - 1]
-            vfsolv[newi] = vfsolv[n - 1]
-        else:
-            # Middle layers uses average values
-            rho[newi] = rhoarea / dz
-            irho[newi] = irhoarea / dz
-            sigma[newi] = sigma[i - 1]
-            vfsolv[newi] = vfsolvarea / dz
-        # First layer uses substrate values
-        newi += 1
-
-    return newslabs[:newi][::-1]

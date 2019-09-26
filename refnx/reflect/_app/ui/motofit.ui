@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1050</width>
-    <height>800</height>
+    <width>966</width>
+    <height>830</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,7 +18,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1000</width>
+    <width>700</width>
     <height>800</height>
    </size>
   </property>
@@ -437,6 +437,11 @@
     </disabled>
    </palette>
   </property>
+  <property name="font">
+   <font>
+    <pointsize>12</pointsize>
+   </font>
+  </property>
   <property name="acceptDrops">
    <bool>true</bool>
   </property>
@@ -533,7 +538,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1050</width>
+     <width>966</width>
      <height>22</height>
     </rect>
    </property>
@@ -545,8 +550,6 @@
     <addaction name="actionRefresh_Data"/>
     <addaction name="actionRemove_Data"/>
     <addaction name="separator"/>
-    <addaction name="actionSave_Fit"/>
-    <addaction name="separator"/>
     <addaction name="actionAutoscale_graph"/>
    </widget>
    <widget class="QMenu" name="menuModel">
@@ -556,6 +559,8 @@
     <addaction name="actionSave_Model"/>
     <addaction name="actionLoad_Model"/>
     <addaction name="actionExport_parameters"/>
+    <addaction name="actionSave_Fit"/>
+    <addaction name="actionSave_SLD_Curve"/>
     <addaction name="separator"/>
     <addaction name="actionExport_Code_Fragment"/>
     <addaction name="separator"/>
@@ -587,6 +592,9 @@
      <addaction name="actionDual_Annealing"/>
      <addaction name="actionSHGO"/>
      <addaction name="actionMCMC"/>
+     <addaction name="separator"/>
+     <addaction name="actionOptimisation_parameters"/>
+     <addaction name="actionProcess_MCMC"/>
     </widget>
     <widget class="QMenu" name="menuFit_as">
      <property name="title">
@@ -701,7 +709,7 @@
          <item row="1" column="3">
           <widget class="QPushButton" name="do_fit_button">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -854,6 +862,18 @@
          </item>
          <item row="2" column="3" rowspan="4">
           <widget class="QListView" name="currently_fitting">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>130</width>
+             <height>16777215</height>
+            </size>
+           </property>
            <property name="editTriggers">
             <set>QAbstractItemView::NoEditTriggers</set>
            </property>
@@ -875,9 +895,14 @@
           <widget class="QTreeView" name="treeView">
            <property name="minimumSize">
             <size>
-             <width>700</width>
+             <width>300</width>
              <height>0</height>
             </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
            </property>
            <property name="acceptDrops">
             <bool>true</bool>
@@ -997,6 +1022,11 @@ QTreeView::branch:open:has-children:has-siblings  {
              <height>70</height>
             </size>
            </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
            <property name="toolTip">
             <string>Give varying parameters finite limits</string>
            </property>
@@ -1087,7 +1117,7 @@ varying?</string>
   </action>
   <action name="actionSave_Fit">
    <property name="text">
-    <string>Save Fit</string>
+    <string>Save Fit Curve</string>
    </property>
   </action>
   <action name="actionSave_Model">
@@ -1169,7 +1199,7 @@ varying?</string>
   </action>
   <action name="actionLoad_File">
    <property name="text">
-    <string>Load Experiment</string>
+    <string>Open Experiment</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -1283,15 +1313,15 @@ varying?</string>
   </action>
   <action name="actionAbout">
    <property name="text">
-    <string>Motofit?</string>
+    <string>About</string>
    </property>
   </action>
   <action name="actionMCMC">
    <property name="checkable">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>MCMC</string>
@@ -1385,6 +1415,21 @@ varying?</string>
    </property>
    <property name="text">
     <string>SHGO</string>
+   </property>
+  </action>
+  <action name="actionOptimisation_parameters">
+   <property name="text">
+    <string>Optimisation parameters</string>
+   </property>
+  </action>
+  <action name="actionSave_SLD_Curve">
+   <property name="text">
+    <string>Save SLD Curve</string>
+   </property>
+  </action>
+  <action name="actionProcess_MCMC">
+   <property name="text">
+    <string>Process MCMC chain</string>
    </property>
   </action>
  </widget>

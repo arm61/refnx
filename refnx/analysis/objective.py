@@ -126,7 +126,7 @@ class BaseObjective(object):
         if pvals is not None:
             vals = pvals
 
-            logpost = self.logp(vals)
+        logpost = self.logp(vals)
         if not np.isfinite(logpost):
             return -np.inf
         logpost += self.logl(vals)
@@ -302,8 +302,7 @@ class Objective(BaseObjective):
         # create and return a Parameters object because it has the
         # __array__ method, which allows one to quickly get numerical values.
         p = Parameters()
-        p.data = [param for param in f_unique(flatten(self.parameters))
-                  if param.vary]
+        p.data = list(f_unique(p for p in flatten(self.parameters) if p.vary))
         return p
 
     def _data_transform(self, model=None):
@@ -475,7 +474,9 @@ class Objective(BaseObjective):
         """
         self.setp(pvals)
 
-        logp = np.sum([param.logp() for param in self.varying_parameters()])
+        logp = np.sum([param.logp() for param in
+                       f_unique(p for p in flatten(self.parameters) if
+                                p.vary)])
 
         if not np.isfinite(logp):
             return -np.inf
@@ -718,11 +719,10 @@ class Objective(BaseObjective):
             `matplotlib` figure and axes objects.
 
         """
-        import matplotlib.pyplot as plt
-
         self.setp(pvals)
 
         if fig is None:
+            import matplotlib.pyplot as plt
             fig = plt.figure()
             ax = fig.add_subplot(111)
         else:
@@ -790,7 +790,9 @@ class Objective(BaseObjective):
         chain = np.array([par.chain for par in var_pars])
         labels = [par.name for par in var_pars]
         chain = chain.reshape(len(chain), -1).T
-        return corner.corner(chain, labels=labels, **kwds)
+        kwds['labels'] = labels
+        kwds['quantiles'] = [0.16, 0.5, 0.84]
+        return corner.corner(chain, **kwds)
 
 
 class GlobalObjective(Objective):
@@ -961,11 +963,11 @@ class GlobalObjective(Objective):
             `matplotlib` figure and axes objects.
 
         """
-        import matplotlib.pyplot as plt
 
         self.setp(pvals)
 
         if fig is None:
+            import matplotlib.pyplot as plt
             fig = plt.figure()
             ax = fig.add_subplot(111)
         else:

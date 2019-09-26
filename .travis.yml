@@ -1,11 +1,12 @@
 sudo: false
 
+dist: xenial
 language: python
 
 matrix:
     include:
         - os: linux
-          env: PY=3.7
+          env: PY=3.7.3
         - os: osx
           language: generic
           env: PY=3.7
@@ -16,14 +17,16 @@ addons:
         packages:
             - libhdf5-serial-dev
 
+services:
+  - xvfb
 
-before_script:
-  - |
-    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      export DISPLAY=:99.0
-      sh -e /etc/init.d/xvfb start
-      sleep 3 # give xvfb some time to start
-    fi
+#before_script:
+#  - |
+#    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+#      export DISPLAY=:99.0
+#      sh -e /etc/init.d/xvfb start
+#      sleep 3 # give xvfb some time to start
+#    fi
 
 
 before_install:
@@ -46,13 +49,26 @@ before_install:
     - source activate conda-refnx
     - conda install --yes numpy scipy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt
     - conda install --yes numpydoc sphinx jupyter pandoc nbconvert
-    - pip install uncertainties ptemcee corner nbsphinx jupyter-sphinx sphinx_rtd_theme tqdm pytest-qt periodictable
+    - pip install uncertainties ptemcee corner nbsphinx jupyter_sphinx sphinx_rtd_theme tqdm pytest-qt periodictable
     - pip install git+https://github.com/pymc-devs/pymc3
 
     # gradually expand flake8 to all of codebase
     # added W504 July18 because it starts to raise error in 3.7
     - flake8 --ignore=F401,W504 --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
 
+    # enable OpenMP support for Apple-clang
+    - |
+      if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+        brew install libomp
+        export CC=/usr/bin/clang
+        export CXX=/usr/bin/clang++
+        export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
+        export CFLAGS="$CFLAGS -Xpreprocessor -fopenmp"
+        export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
+        export CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
+        export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
+        export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
+      fi
 
 script:
     # definitely want to test the _creflect module on travis.

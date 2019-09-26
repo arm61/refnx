@@ -1,10 +1,9 @@
-from multiprocessing import Pool
+from multiprocessing import Pool, get_context
 import warnings as _warnings
 import os as _os
 import sys as _sys
 import functools
 from tempfile import mkdtemp
-from collections.abc import Iterable
 from contextlib import contextmanager
 from inspect import getfullargspec as _getargspecf
 
@@ -112,25 +111,27 @@ class TemporaryDirectory(object):
             pass
 
 
-def flatten(l):
+def flatten(seq):
     """
     Flatten a nested sequence.
 
     Parameters
     ----------
-    l : sequence
+    seq : sequence
         The sequence to flatten
 
     Returns
     -------
     el : generator
-        yields flattened sequences from l
+        yields flattened sequences from seq
     """
-    for el in l:
-        if (isinstance(el, Iterable) and
-                not isinstance(el, (str, bytes))):
+    for el in seq:
+        try:
+            iter(el)
+            if isinstance(el, (str, bytes)):
+                raise TypeError
             yield from flatten(el)
-        else:
+        except TypeError:
             yield el
 
 
@@ -211,11 +212,15 @@ class MapWrapper(object):
         If `pool` is a map-like callable that follows the same
         calling sequence as the built-in map function, then this callable is
         used for parallelisation.
+    context : None, {'spawn', 'fork', 'forkserver'}
+
     """
-    def __init__(self, pool=-1):
+    def __init__(self, pool=-1, context=None):
         self.pool = None
         self._mapfunc = map
         self._own_pool = False
+
+        ctx = get_context(context)
 
         if callable(pool):
             self.pool = pool
@@ -224,14 +229,14 @@ class MapWrapper(object):
             # user supplies a number
             if int(pool) == -1:
                 # use as many processors as possible
-                self.pool = Pool()
+                self.pool = ctx.Pool()
                 self._mapfunc = self.pool.map
                 self._own_pool = True
             elif int(pool) in [0, 1]:
                 pass
             elif int(pool) > 1:
                 # use the number of processors requested
-                self.pool = Pool(processes=int(pool))
+                self.pool = ctx.Pool(processes=int(pool))
                 self._mapfunc = self.pool.map
                 self._own_pool = True
 

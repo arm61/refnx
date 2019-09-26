@@ -37,16 +37,16 @@ class ManualBeamFinder(QtWidgets.QDialog):
                                  self)
 
         # values for spinboxes
-        self._true_centre = 121.
-        self._true_sd = 5.
+        self._true_centre = 500.
+        self._true_sd = 20.
 
         self._pixels_to_include = 200
-        self._integrate_width = 50
-        self._integrate_position = 121
-        self._low_px = 122
-        self._high_px = 122
-        self._low_bkg = 122
-        self._high_bkg = 122
+        self._integrate_width = 200
+        self._integrate_position = 500
+        self._low_px = 500
+        self._high_px = 501
+        self._low_bkg = 503
+        self._high_bkg = 499
 
         # detector image
         self.detector_image_layout = QtWidgets.QGridLayout(
@@ -103,6 +103,13 @@ class ManualBeamFinder(QtWidgets.QDialog):
             self.detector_err = detector_err[0]
             n_images = np.size(detector, 0)
 
+        # set min/max values for the detector image GUI. Crashes result
+        # otherwise
+        self.integrate_position.setMaximum(np.size(self.detector, -1) - 1)
+        self.integrate_width.setMaximum(np.size(self.detector, -1) - 1)
+        self.pixels_to_include.setMaximum(np.size(self.detector, 0))
+        self.true_centre.setMaximum(np.size(self.detector, -1))
+
         # guess peak centre from centroid.
         xs = np.sum(self.detector, axis=0)
         self._integrate_position, _ = centroid(xs)
@@ -142,8 +149,16 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
         regions = fore_back_region(beam_centre, beam_sd)
         self._low_px, self._high_px, bp = regions
-        self._low_bkg = np.min(bp[0])
-        self._high_bkg = np.max(bp[0])
+
+        # perhaps fore_back_region returned regions that weren't on the
+        # detector
+        self._low_px = np.clip(self._low_px, 0, np.size(self.detector, 1))
+        self._high_px = np.clip(self._high_px, 0, np.size(self.detector, 1))
+
+        # perhaps fore_back_region returned no background pixels
+        if len(bp[0]) > 0:
+            self._low_bkg = np.min(bp[0])
+            self._high_bkg = np.max(bp[0])
 
         self.detector_image.display_image(self.detector, beam_centre,
                                           self._low_px,
@@ -268,8 +283,16 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
         regions = fore_back_region(self._true_centre, self._true_sd)
         self._low_px, self._high_px, bp = regions
-        self._low_bkg = np.min(bp[0])
-        self._high_bkg = np.max(bp[0])
+
+        # perhaps fore_back_region returned regions that weren't on the
+        # detector
+        self._low_px = np.clip(self._low_px, 0, np.size(self.detector, 1))
+        self._high_px = np.clip(self._high_px, 0, np.size(self.detector, 1))
+
+        # perhaps fore_back_region returned no background pixels
+        if len(bp[0]) > 0:
+            self._low_bkg = np.min(bp[0])
+            self._high_bkg = np.max(bp[0])
 
         self.redraw_cross_section_regions()
 
@@ -433,10 +456,10 @@ class Cross_Section(FigureCanvas):
         self._dragging = False
 
         # values for foreground and background regions
-        self._low_px = 112
-        self._high_px = 115
-        self._low_bkg = 110
-        self._high_bkg = 120
+        self._low_px = 500
+        self._high_px = 505
+        self._low_bkg = 490
+        self._high_bkg = 515
         self.line_attrs = {}
 
         self.axes = self.figure.add_axes([0.1, 0.07, 0.95, 0.94])

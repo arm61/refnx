@@ -2,12 +2,12 @@ import pickle
 import numpy as np
 from numpy.testing import (assert_allclose, assert_equal, assert_almost_equal,
                            assert_)
-from refnx.reflect import SLD, Slab, Structure, Spline
+from refnx.reflect import SLD, Slab, Structure, Spline, Linear
 from refnx.analysis import Parameter, Interval, Parameters
 from refnx._lib import flatten
 
 
-class TestReflect(object):
+class TestSpline(object):
 
     def setup_method(self):
         self.left = SLD(1.5)(10, 3)
@@ -45,6 +45,23 @@ class TestReflect(object):
         s.solvent = self.solvent
         # calculate an SLD profile
         s.sld_profile()
+
+    def test_spline_no_knots(self):
+        # try and make Spline with no knots
+        a = Spline(100, [], [], zgrad=False, microslab_max_thickness=1)
+
+        s = self.left | a | self.right | self.solvent
+        b = a.slabs(s)
+        assert_equal(b[:, 2], 0)
+
+        # microslabs are assessed in the middle of the slab
+        assert_equal(b[0, 1], a(0.5 * b[0, 0], s))
+
+        # with the ends turned off the profile should be a straight line
+        assert_equal(a(50, s), 2.0)
+
+        q = np.linspace(0.01, 0.5, 1001)
+        s.reflectivity(q)
 
     def test_pickle(self):
         a = Spline(100, [2, 3],
@@ -147,3 +164,22 @@ class TestReflect(object):
         from pytest import raises
         with raises(ValueError):
             s.slabs()
+
+    def test_spine_interfaces(self):
+        a = Spline(100, [2, 3],
+                   [0.3, 0.3], zgrad=False, microslab_max_thickness=1)
+
+        s = self.left | a | self.right | self.solvent
+
+        # this is a check to ensure that:
+        # 1) _micro_slabs is being called by Structure.slabs()
+        # 2) _micro_slabs works correctly when a Spline is being used.
+        #    Spline.interfaces should be `None`, which should expanded from
+        #    that default in _micro_slabs to `[Erf] * len(Structure.slabs())`.
+        s[-1].interfaces = Linear()
+        s._micro_slabs()
+        assert_equal(len(s._micro_slabs()), len(s.slabs()))
+
+        # should be able to set all the interfaces in Spline to Linear.
+        a.interfaces = Linear()
+        a.interfaces = [Linear()]

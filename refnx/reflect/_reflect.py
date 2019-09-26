@@ -1,3 +1,28 @@
+"""
+*Calculates the specular (Neutron or X-ray) reflectivity from a stratified
+series of layers.
+
+The refnx code is distributed under the following license:
+
+Copyright (c) 2015 A. R. J. Nelson, ANSTO
+
+Permission to use and redistribute the source code or binary forms of this
+software and its documentation, with or without modification is hereby
+granted provided that the above notice of copyright, these terms of use,
+and the disclaimer of warranty below appear in the source code and
+documentation, and that none of the names of above institutions or
+authors appear in advertising or endorsement of works derived from this
+software without specific prior written permission from all parties.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THIS SOFTWARE.
+
+"""
 import numpy as np
 
 
@@ -120,6 +145,107 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
     reflectivity *= scale
     reflectivity += bkg
     return np.real(np.reshape(reflectivity, qvals.shape))
+
+
+# The following slab contraction code was translated from C code in
+# the refl1d project.
+def _contract_by_area(slabs, dA=0.5):
+    """
+    Shrinks a slab representation to a reduced number of layers. This can
+    reduced calculation times.
+
+    Parameters
+    ----------
+    slabs : array
+        Has shape (N, 5).
+
+            slab[N, 0] - thickness of layer N
+            slab[N, 1] - overall SLD.real of layer N (material AND solvent)
+            slab[N, 2] - overall SLD.imag of layer N (material AND solvent)
+            slab[N, 3] - roughness between layer N and N-1
+            slab[N, 4] - volume fraction of solvent in layer N.
+                         (1 - solvent_volfrac = material_volfrac)
+
+    dA : float
+        Larger values coarsen the profile to a greater extent, and vice versa.
+
+    Returns
+    -------
+    contract_slab : array
+        Contracted slab representation.
+
+    Notes
+    -----
+    The reflectivity profiles from both contracted and un-contracted profiles
+    should be compared to check for accuracy.
+    """
+
+    # In refl1d the first slab is the substrate, the order is reversed here.
+    # In the following code the slabs are traversed from the backing towards
+    # the fronting.
+    newslabs = np.copy(slabs)[::-1]
+    d = newslabs[:, 0]
+    rho = newslabs[:, 1]
+    irho = newslabs[:, 2]
+    sigma = newslabs[:, 3]
+    vfsolv = newslabs[:, 4]
+
+    n = np.size(d, 0)
+    i = newi = 1  # Skip the substrate
+
+    while i < n:
+        # Get ready for the next layer
+        # Accumulation of the first row happens in the inner loop
+        dz = rhoarea = irhoarea = vfsolvarea = 0.
+        rholo = rhohi = rho[i]
+        irholo = irhohi = irho[i]
+
+        # Accumulate slices into layer
+        while True:
+            # Accumulate next slice
+            dz += d[i]
+            rhoarea += d[i] * rho[i]
+            irhoarea += d[i] * irho[i]
+            vfsolvarea += d[i] * vfsolv[i]
+
+            i += 1
+            # If no more slices or sigma != 0, break immediately
+            if i == n or sigma[i - 1] != 0.:
+                break
+
+            # If next slice won't fit, break
+            if rho[i] < rholo:
+                rholo = rho[i]
+            if rho[i] > rhohi:
+                rhohi = rho[i]
+            if (rhohi - rholo) * (dz + d[i]) > dA:
+                break
+
+            if irho[i] < irholo:
+                irholo = irho[i]
+            if irho[i] > irhohi:
+                irhohi = irho[i]
+            if (irhohi - irholo) * (dz + d[i]) > dA:
+                break
+
+        # Save the layer
+        d[newi] = dz
+        if i == n:
+            # printf("contract: adding final sld at %d\n",newi)
+            # Last layer uses surface values
+            rho[newi] = rho[n - 1]
+            irho[newi] = irho[n - 1]
+            vfsolv[newi] = vfsolv[n - 1]
+        else:
+            # Middle layers uses average values
+            rho[newi] = rhoarea / dz
+            irho[newi] = irhoarea / dz
+            sigma[newi] = sigma[i - 1]
+            vfsolv[newi] = vfsolvarea / dz
+        # First layer uses substrate values
+        newi += 1
+
+    return newslabs[:newi][::-1]
 
 
 """

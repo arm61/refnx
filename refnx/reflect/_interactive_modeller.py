@@ -1,3 +1,25 @@
+"""
+refnx is distributed under the following license:
+
+Copyright (c) 2015 A. R. J. Nelson, ANSTO
+
+Permission to use and redistribute the source code or binary forms of this
+software and its documentation, with or without modification is hereby
+granted provided that the above notice of copyright, these terms of use,
+and the disclaimer of warranty below appear in the source code and
+documentation, and that none of the names of above institutions or
+authors appear in advertising or endorsement of works derived from this
+software without specific prior written permission from all parties.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THIS SOFTWARE.
+
+"""
 import time
 import datetime
 import pickle
@@ -10,9 +32,7 @@ import numpy as np
 import ipywidgets as widgets
 import traitlets
 from traitlets import HasTraits
-import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from IPython.display import display, clear_output
 
 from refnx.reflect import Slab, ReflectModel
 from refnx.dataset import ReflectDataset
@@ -949,6 +969,7 @@ class Motofit(object):
         """
         # the theoretical model
         # display the main graph
+        import matplotlib.pyplot as plt
         self.fig = plt.figure(figsize=(9, 4))
 
         # grid specs depending on whether the residuals are displayed
@@ -1077,6 +1098,7 @@ class Motofit(object):
         """
         Print to the output widget
         """
+        from IPython.display import clear_output
         with self.output:
             clear_output()
             print(string)
@@ -1174,6 +1196,7 @@ class Motofit(object):
         self.update_model(None)
 
     def _on_display_residuals_changed(self, change):
+        import matplotlib.pyplot as plt
         if change['new']:
             self.ax_residual.set_visible(True)
             self.ax_data.set_position(

@@ -101,3 +101,74 @@ Details of changes made to refnx
 - print human readable output when fitting with the Jupyter interactive
   modeller.
 - added shgo and dual_annealing minimiser options to the refnx gui.
+- SLD calculator retains state between viewings.
+- Added dialogue to adjust optimisation parameters.
+- Fixed bug in export of MCMC code fragment, Gui would crash.
+- Autocorrelation plot produced from mcmc.py code fragment, this can be used to
+  judge how much to thin the chains by.
+- `refnx.analysis` now possesses a standalone function, `autocorrelation_chain`
+  for calculating chain autocorrelation. Previously the calculation had to be
+  done using a CurveFitter instance.
+- Function for calculating autocorrelation time made visible as:
+  `refnx.analysis.integrated_time`. You should pass the autocorrelation array
+  to this function.
+- GUI can now export an ASCII file representing the model SLD curve.
+- BUG: when the GUI saves a model it should pickle a ReflectModel. It wasn't
+  doing this, it was pickling a DataObject. This has now been fixed, but the
+  fix affects back compatibility.
+- *GUI can now do MCMC sampling*
+- Add option to change context of Mapwrapper (spawn/fork/forkserver)
+- BUG: when loading (not refreshing) a dataset that was already loaded, the
+  associated model was lost. (GH331)
+- Added a progress bar for batch fitting.
+- Speeded up batch fitting
+
+0.1.8
+-----
+- When GUI experiment file is loaded the correct fitting algorithm wasn't being
+  set correctly (GH338).
+- Prevent crash when trying to refresh a stale dataset (i.e. is no longer in
+  its original location.
+- Produce autocorrelation graph when sampling in GUI.
+- Added links to ptemcee and emcee in the optimisation parameters window.
+- GUI produces corner plot after MCMC sampling
+- BUG fix for rebinning code (doesn't affect analysis)
+- Different interfacial roughness types can be specified between all Components
+  in a Structure. The available types are: Erf (Error Function, default), Tanh,
+  Sinusoidal, Exponential, Step, Linear. User specifiable interfaces can be
+  created by subclassing Interface.
+- A fix for the PyQt5 interface using 4K screens on Windows was made.
+  Previously the GUI elements and fonts were being displayed in a much too
+  small fashion.
+- Made various dialogues in the PyQt5 GUI window modal (to prevent them being
+ lost).
+- fixed bugs if cancel was pressed during the MCMC folder dialogue phase.
+- made loading of experiment file back compatible.
+
+0.1.9
+-----
+- Added DOTAP, h-DOPC, 18:1 Diether PC to lipids database
+- Updated SLIM reduction software to cope with the new monobloc detector
+- Improve speed of resolution smearing by using splev/splrep
+- Added shell scripts to build manylinux and macOS wheels (as well as test
+ them).
+- Some minor optimisations for calculation of `Interval.logp`.
+- Some minor optimisations for various calculations in `Objective`.
+- Fixed potential for crashes in ManualBeamFinder if controls specified
+  regions that went outside the detector region.
+- cythonized contract_by_area, resulting in huge speedup for microsliced
+  structures.
+- Enabled parallel calculation of reflectivity using OpenMP. Tests show that
+  it should be ~20% faster than the previous calculation in C.
+- tqdm progress bar for ptemcee sampling (if tqdm is installed).
+- Cleaned up the _creflect module. Threaded reflectivity calculation in that
+  extension now uses std::thread instead of pthreads (POSIX) or WinAPI
+  (windows).
+
+0.1.10
+------
+- Prevent spurious benchmark package installation.
+- Fixed bug when loading a MTFT file saved in a previous version of refnx.
+- event mode data reduction sped up by an order of magnitude
+- Added neutron transmission calculator (if periodictable is present)
+- event file reader can now read any ANSTO packedbin file (reduction).

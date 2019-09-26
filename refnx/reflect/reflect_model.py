@@ -1,3 +1,28 @@
+"""
+*Calculates the specular (Neutron or X-ray) reflectivity from a stratified
+series of layers.
+
+The refnx code is distributed under the following license:
+
+Copyright (c) 2015 A. R. J. Nelson, ANSTO
+
+Permission to use and redistribute the source code or binary forms of this
+software and its documentation, with or without modification is hereby
+granted provided that the above notice of copyright, these terms of use,
+and the disclaimer of warranty below appear in the source code and
+documentation, and that none of the names of above institutions or
+authors appear in advertising or endorsement of works derived from this
+software without specific prior written permission from all parties.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THIS SOFTWARE.
+
+"""
 import abc
 import math
 import numbers
@@ -5,19 +30,73 @@ import warnings
 
 import numpy as np
 import scipy
-from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.interpolate import splrep, splev
 
-try:
-    from refnx.reflect import _creflect as refcalc
-except ImportError:
-    print('WARNING, Using slow reflectivity calculation')
-    from refnx.reflect import _reflect as refcalc
+
 from refnx.analysis import (Parameters, Parameter, possibly_create_parameter)
 
 
 # some definitions for resolution smearing
 _FWHM = 2 * np.sqrt(2 * np.log(2.0))
 _INTLIMIT = 3.5
+
+
+"""
+Implementation notes
+--------------------
+1. For _smeared_abeles_fixed I investigated calculating a master curve,
+   adjacent data points have overlapping resolution kernels. So instead of
+   using e.g. an oversampling factor of 17, one could get away with using
+   a factor of 6. This is because the calculated points can be used to smear
+   more than one datapoint. One can't use Gaussian quadrature, Simpsons rule is
+   needed. Technically the approach works, but turns out to be no faster than
+   the Gaussian quadrature with the x17 oversampling (even if everything is
+   vectorised). There are a couple of reasons: a) calculating the Gaussian
+   weights has to be re-done for all the resolution smearing points for every
+   datapoint. For Gaussian quadrature that calculation only needs to be done
+   once, because the oversampling points are at constant locations around the
+   mean. b) in the implementation I tried the Simpsons rule had to integrate
+   e.g. 700 odd points instead of the fixed 17 for the Gaussin quadrature.
+"""
+
+
+def get_reflect_backend(backend='c'):
+    r"""
+
+    Parameters
+    ----------
+    backend: {'python', 'cython', 'c'}, str
+        The module that calculates the reflectivity. Speed should go in the
+        order cython > c > python. If a particular method is not available the
+        function falls back: cython --> c --> python.
+
+    Returns
+    -------
+    abeles: callable
+        The callable that calculates the reflectivity
+
+    """
+    if backend == 'cython':
+        try:
+            from refnx.reflect import _cyreflect as _cy
+            f = _cy.abeles
+        except ImportError:
+            return get_reflect_backend('c')
+    elif backend == 'c':
+        try:
+            from refnx.reflect import _creflect as _c
+            f = _c.abeles
+        except ImportError:
+            return get_reflect_backend('python')
+    elif backend == 'python':
+        warnings.warn("Using the SLOW reflectivity calculation.")
+        from refnx.reflect import _reflect as _py
+        f = _py.abeles
+
+    return f
+
+
+abeles = get_reflect_backend()
 
 
 class ReflectModel(object):
@@ -325,7 +404,7 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
     """
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
-        return refcalc.abeles(q, slabs, scale=scale, bkg=bkg, threads=threads)
+        return abeles(q, slabs, scale=scale, bkg=bkg, threads=threads)
     elif isinstance(dq, numbers.Real):
         dq = float(dq)
         return (scale *
@@ -366,9 +445,9 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
 
         qvals_for_res = dq[:, 0, :]
         # work out the reflectivity at the kernel evaluation points
-        smeared_rvals = refcalc.abeles(qvals_for_res,
-                                       slabs,
-                                       threads=threads)
+        smeared_rvals = abeles(qvals_for_res,
+                               slabs,
+                               threads=threads)
 
         # multiply by probability
         smeared_rvals *= dq[:, 1, :]
@@ -438,7 +517,7 @@ def _smearkernel(x, w, q, dq, threads):
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / _FWHM
-    return refcalc.abeles(localq, w, threads=threads) * gauss
+    return abeles(localq, w, threads=threads) * gauss
 
 
 def _smeared_abeles_adaptive(qvals, w, dqvals, threads=-1):
@@ -538,9 +617,9 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=-1):
 
     qvals_for_res = ((np.atleast_2d(abscissa) *
                      (vb - va) + vb + va) / 2.)
-    smeared_rvals = refcalc.abeles(qvals_for_res,
-                                   w,
-                                   threads=threads)
+    smeared_rvals = abeles(qvals_for_res,
+                           w,
+                           threads=threads)
 
     smeared_rvals = np.reshape(smeared_rvals,
                                (qvals.size, abscissa.size))
@@ -573,7 +652,7 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     """
 
     if resolution < 0.5:
-        return refcalc.abeles(q, w, threads=threads)
+        return abeles(q, w, threads=threads)
 
     resolution /= 100
     gaussnum = 51
@@ -598,12 +677,17 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     gauss_x = np.linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
-    rvals = refcalc.abeles(xlin, w, threads=threads)
+    rvals = abeles(xlin, w, threads=threads)
     smeared_rvals = np.convolve(rvals, gauss_y, mode='same')
-    interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
+    smeared_rvals *= gauss_x[1] - gauss_x[0]
 
-    smeared_output = interpolator(q)
-    smeared_output *= gauss_x[1] - gauss_x[0]
+    # interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
+    #
+    # smeared_output = interpolator(q)
+
+    tck = splrep(xlin, smeared_rvals)
+    smeared_output = splev(q, tck)
+
     return smeared_output
 
 
