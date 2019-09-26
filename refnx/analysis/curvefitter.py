@@ -450,7 +450,9 @@ class CurveFitter(object):
             rstate0 = check_random_state(random_state).get_state()
             self._state.random_state = rstate0
             if isinstance(self.sampler, PTSampler):
-                self.sampler._random = rstate0
+                rstate1 = np.random.RandomState()
+                rstate1.set_state(rstate0)
+                self.sampler._random = rstate1
 
         # remove chains from each of the parameters because they slow down
         # pickling but only if they are parameter objects.
@@ -515,6 +517,36 @@ class CurveFitter(object):
 
         # sets parameter value and stderr
         return process_chain(self.objective, self.chain)
+
+    def logevidence(self, n):
+        """
+        Evaluates the log-evidence from the MCMC chain.
+
+        Parameters
+        ----------
+        n : int
+            Number of MCMC samples to use integral evaluation, must be less
+            than the total number of MCMC samples
+
+        Returns
+        -------
+        logevidence : float
+            Logrithm of evidence for a given model to a dataset
+        """
+        self._check_vars_unchanged()
+        bounds = bounds_list(self.objective.varying_parameters())
+        volume = 1
+        for i in bounds:
+            volume *= (i[1] - i[0])
+        choose = self.objective.pgen(ngen=n)
+        logl_array = np.array([])
+        for pvec in choose:
+            self.objective.setp(pvec)
+            logl_array = np.append(logl_array, self.objective.logl())
+        logl = np.sort(logl_array)[::-1]
+        logevidence = logl[0] + np.log(1 + np.sum(logl[1:] / logl[0]))
+        return logevidence * 1 / (
+            n * volume ** len(self.objective.varying_parameters())
 
     def fit(self, method='L-BFGS-B', target='nll', **kws):
         """
